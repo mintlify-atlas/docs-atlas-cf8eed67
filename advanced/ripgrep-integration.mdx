@@ -1,0 +1,339 @@
+---
+title: Ripgrep Integration
+description: Interactive ripgrep integration patterns with reload, transform, and dual-mode searching
+---
+
+Combining [Ripgrep](https://github.com/BurntSushi/ripgrep) with fzf creates powerful interactive search workflows. This page covers multiple integration patterns from simple to advanced.
+
+<Note>
+Ripgrep is the right tool for searching text inside files. fzf is designed for filtering lists. Together, they're incredibly powerful.
+</Note>
+
+## Prerequisites
+
+<Steps>
+  <Step title="Install Ripgrep">
+    ```bash
+    # macOS
+    brew install ripgrep
+    
+    # Ubuntu/Debian
+    sudo apt install ripgrep
+    
+    # Arch
+    sudo pacman -S ripgrep
+    ```
+  </Step>
+  
+  <Step title="Install bat (optional but recommended)">
+    ```bash
+    # macOS
+    brew install bat
+    
+    # Ubuntu/Debian
+    sudo apt install bat
+    
+    # Arch
+    sudo pacman -S bat
+    ```
+  </Step>
+</Steps>
+
+## Secondary Filter Pattern
+
+Ripgrep performs the initial search, fzf adds interactivity:
+
+```bash
+#!/usr/bin/env bash
+# Save as: rfv (Ripgrep + fzf + Vim)
+
+# 1. Search for text in files using Ripgrep
+# 2. Interactively narrow down the list using fzf
+# 3. Open the file in Vim
+rg --color=always --line-number --no-heading --smart-case "${*:-}" |
+  fzf --ansi \
+      --color "hl:-1:underline,hl+:-1:underline:reverse" \
+      --delimiter : \
+      --preview 'bat --color=always {1} --highlight-line {2}' \
+      --preview-window 'up,60%,border-bottom,+{2}+3/3,~3' \
+      --bind 'enter:become(vim {1} +{2})'
+```
+
+<Accordion title="Understanding the command">
+<CodeGroup>
+```bash Ripgrep output format
+man/man1/fzf.1:54:.BI "--algo=" TYPE
+man/man1/fzf.1:55:Fuzzy matching algorithm (default: v2)
+src/pattern_test.go:7:  "github.com/junegunn/fzf/src/algo"
+```
+
+```bash Field extraction
+# Delimiter is colon (:)
+# {1} = file path (man/man1/fzf.1)
+# {2} = line number (54)
+# {3..} = matched content
+```
+</CodeGroup>
+
+**Key options:**
+- `--ansi`: Parse ANSI color codes from Ripgrep
+- `--delimiter :`: Split on colons for field extraction
+- `{1}` and `{2}`: File path and line number
+- `become(vim {1} +{2})`: Open file at specific line
+
+**Preview window breakdown:**
+- `up,60%`: Position and size
+- `border-bottom`: Border style
+- `+{2}+3/3`: Scroll offset (line number + 3 lines for bat header, show at 1/3 position)
+- `~3`: Fixed header (top 3 lines always visible)
+</Accordion>
+
+### Usage
+
+```bash
+# Make executable
+chmod +x rfv
+
+# Search for "algo"
+./rfv algo
+```
+
+## Interactive Ripgrep Launcher
+
+Ripgrep restarts on every query change:
+
+```bash
+#!/usr/bin/env bash
+
+# 1. Search for text in files using Ripgrep
+# 2. Interactively restart Ripgrep with reload action
+# 3. Open the file in Vim
+RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
+INITIAL_QUERY="${*:-}"
+fzf --ansi --disabled --query "$INITIAL_QUERY" \
+    --bind "start:reload:$RG_PREFIX {q} || true" \
+    --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
+    --delimiter : \
+    --preview 'bat --color=always {1} --highlight-line {2}' \
+    --preview-window 'up,60%,border-bottom,+{2}+3/3,~3' \
+    --bind 'enter:become(vim {1} +{2})'
+```
+
+<Accordion title="Key differences from secondary filter">
+- `--disabled`: Turns off fzf's fuzzy matching
+- `start:reload`: Starts Ripgrep when fzf launches
+- `change:reload`: Restarts Ripgrep on every query change
+- `{q}`: Current query string placeholder
+- `sleep 0.1`: Debouncing to reduce load
+- `|| true`: Suppresses warnings when no matches
+
+**Tradeoffs:**
+- ✅ Better performance on large projects
+- ✅ Frees memory as you narrow results
+- ❌ Loses fuzzy matching (Ripgrep uses exact/regex)
+</Accordion>
+
+## Two-Phase Filtering
+
+Switch from Ripgrep mode to fzf mode:
+
+```bash
+#!/usr/bin/env bash
+
+# Two-phase filtering with Ripgrep and fzf
+#
+# 1. Search for text in files using Ripgrep
+# 2. Interactively restart Ripgrep with reload action
+#    * Press alt-enter to switch to fzf-only filtering
+# 3. Open the file in Vim
+RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
+INITIAL_QUERY="${*:-}"
+fzf --ansi --disabled --query "$INITIAL_QUERY" \
+    --bind "start:reload:$RG_PREFIX {q}" \
+    --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
+    --bind "alt-enter:unbind(change,alt-enter)+change-prompt(2. fzf> )+enable-search+clear-query" \
+    --color "hl:-1:underline,hl+:-1:underline:reverse" \
+    --prompt '1. ripgrep> ' \
+    --delimiter : \
+    --preview 'bat --color=always {1} --highlight-line {2}' \
+    --preview-window 'up,60%,border-bottom,+{2}+3/3,~3' \
+    --bind 'enter:become(vim {1} +{2})'
+```
+
+<Steps>
+  <Step title="Phase 1: Ripgrep mode">
+    - Query restarts Ripgrep on every keystroke
+    - Fast, but no fuzzy matching
+    - Prompt shows `1. ripgrep>`
+  </Step>
+  
+  <Step title="Press alt-enter to switch">
+    - `unbind(change,alt-enter)`: Stop reloading, disable this binding
+    - `change-prompt(2. fzf>)`: Update prompt
+    - `enable-search`: Turn on fzf's fuzzy matching
+    - `clear-query`: Clear the Ripgrep query
+  </Step>
+  
+  <Step title="Phase 2: fzf mode">
+    - Fuzzy filter the Ripgrep results
+    - No more Ripgrep reloads
+    - Prompt shows `2. fzf>`
+  </Step>
+</Steps>
+
+<Tip>
+Use Phase 1 to narrow down to a few hundred matches, then switch to Phase 2 for fuzzy filtering.
+</Tip>
+
+## Bidirectional Mode Switching
+
+Switch between Ripgrep and fzf modes with CTRL-R and CTRL-F:
+
+```bash
+#!/usr/bin/env bash
+
+# Switch between Ripgrep launcher mode (CTRL-R) and fzf filtering mode (CTRL-F)
+rm -f /tmp/rg-fzf-{r,f}
+RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
+INITIAL_QUERY="${*:-}"
+fzf --ansi --disabled --query "$INITIAL_QUERY" \
+    --bind "start:reload($RG_PREFIX {q})+unbind(ctrl-r)" \
+    --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
+    --bind "ctrl-f:unbind(change,ctrl-f)+change-prompt(2. fzf> )+enable-search+rebind(ctrl-r)+transform-query(echo {q} > /tmp/rg-fzf-r; cat /tmp/rg-fzf-f)" \
+    --bind "ctrl-r:unbind(ctrl-r)+change-prompt(1. ripgrep> )+disable-search+reload($RG_PREFIX {q} || true)+rebind(change,ctrl-f)+transform-query(echo {q} > /tmp/rg-fzf-f; cat /tmp/rg-fzf-r)" \
+    --color "hl:-1:underline,hl+:-1:underline:reverse" \
+    --prompt '1. ripgrep> ' \
+    --delimiter : \
+    --header '╱ CTRL-R (ripgrep mode) ╱ CTRL-F (fzf mode) ╱' \
+    --preview 'bat --color=always {1} --highlight-line {2}' \
+    --preview-window 'up,60%,border-bottom,+{2}+3/3,~3' \
+    --bind 'enter:become(vim {1} +{2})'
+```
+
+<Accordion title="How query persistence works">
+Queries are saved to temp files so they're restored when switching modes:
+
+```bash
+# CTRL-F (to fzf mode)
+transform-query(echo {q} > /tmp/rg-fzf-r; cat /tmp/rg-fzf-f)
+# Saves current Ripgrep query, restores fzf query
+
+# CTRL-R (back to ripgrep mode)
+transform-query(echo {q} > /tmp/rg-fzf-f; cat /tmp/rg-fzf-r)
+# Saves current fzf query, restores Ripgrep query
+```
+
+This uses `transform-query` action (added in fzf 0.36.0) and `rebind` (added in fzf 0.30.0).
+</Accordion>
+
+## Single Key Toggle
+
+Simplified version using `transform` with state stored in prompt:
+
+```bash
+#!/usr/bin/env bash
+
+# Switch between Ripgrep mode and fzf filtering mode (CTRL-T)
+rm -f /tmp/rg-fzf-{r,f}
+RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
+INITIAL_QUERY="${*:-}"
+fzf --ansi --disabled --query "$INITIAL_QUERY" \
+    --bind "start:reload:$RG_PREFIX {q}" \
+    --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
+    --bind 'ctrl-t:transform:[[ ! $FZF_PROMPT =~ ripgrep ]] &&
+      echo "rebind(change)+change-prompt(1. ripgrep> )+disable-search+transform-query:echo \{q} > /tmp/rg-fzf-f; cat /tmp/rg-fzf-r" ||
+      echo "unbind(change)+change-prompt(2. fzf> )+enable-search+transform-query:echo \{q} > /tmp/rg-fzf-r; cat /tmp/rg-fzf-f"' \
+    --color "hl:-1:underline,hl+:-1:underline:reverse" \
+    --prompt '1. ripgrep> ' \
+    --delimiter : \
+    --header 'CTRL-T: Switch between ripgrep/fzf' \
+    --preview 'bat --color=always {1} --highlight-line {2}' \
+    --preview-window 'up,60%,border-bottom,+{2}+3/3,~3' \
+    --bind 'enter:become(vim {1} +{2})'
+```
+
+<Warning>
+When using `transform`, escape the placeholder as `\{q}` to prevent immediate evaluation.
+</Warning>
+
+<Note>
+The `transform` action (added in fzf 0.45.0) checks `$FZF_PROMPT` to determine current state and outputs the appropriate actions.
+</Note>
+
+## Dual Search Control
+
+Control Ripgrep and fzf search simultaneously:
+
+```bash
+#!/usr/bin/env bash
+
+export TEMP=$(mktemp -u)
+trap 'rm -f "$TEMP"' EXIT
+
+INITIAL_QUERY="${*:-}"
+TRANSFORMER='
+  rg_pat={q:1}      # The first word is passed to ripgrep
+  fzf_pat={q:2..}   # The rest are passed to fzf
+
+  if ! [[ -r "$TEMP" ]] || [[ $rg_pat != $(cat "$TEMP") ]]; then
+    echo "$rg_pat" > "$TEMP"
+    printf "reload:sleep 0.1; rg --column --line-number --no-heading --color=always --smart-case %q || true" "$rg_pat"
+  fi
+  echo "+search:$fzf_pat"
+'
+fzf --ansi --disabled --query "$INITIAL_QUERY" \
+    --with-shell 'bash -c' \
+    --bind "start,change:transform:$TRANSFORMER" \
+    --color "hl:-1:underline,hl+:-1:underline:reverse" \
+    --delimiter : \
+    --preview 'bat --color=always {1} --highlight-line {2}' \
+    --preview-window 'up,60%,border-line,+{2}+3/3,~3' \
+    --bind 'enter:become(vim {1} +{2})'
+```
+
+<Steps>
+  <Step title="Split query">
+    ```bash
+    rg_pat={q:1}      # First word → Ripgrep
+    fzf_pat={q:2..}   # Remaining words → fzf
+    ```
+  </Step>
+  
+  <Step title="Conditional reload">
+    Only reload Ripgrep if the first word changed:
+    ```bash
+    if ! [[ -r "$TEMP" ]] || [[ $rg_pat != $(cat "$TEMP") ]]; then
+      echo "$rg_pat" > "$TEMP"
+      printf "reload:..." "$rg_pat"
+    fi
+    ```
+  </Step>
+  
+  <Step title="Apply fzf search">
+    ```bash
+    echo "+search:$fzf_pat"
+    ```
+    The `search` action filters Ripgrep results with fzf.
+  </Step>
+</Steps>
+
+<Tip>
+Query example: `function test main`
+- `function` triggers Ripgrep search
+- `test main` applies fuzzy filtering to results
+</Tip>
+
+## Pattern Comparison
+
+| Pattern | Fuzzy Match | Performance | Complexity | Best For |
+|---------|-------------|-------------|------------|----------|
+| Secondary Filter | ✅ Yes | Good | Simple | One-time searches |
+| Interactive Launcher | ❌ No | Excellent | Simple | Large projects |
+| Two-Phase | ✅ Switchable | Excellent | Medium | Flexible workflows |
+| Bidirectional | ✅ Switchable | Excellent | Complex | Power users |
+| Single Key Toggle | ✅ Switchable | Excellent | Medium | Simplified toggle |
+| Dual Search | ✅ Yes | Excellent | Complex | Combined search |
+
+<Tip>
+Start with the **Secondary Filter** pattern. Upgrade to **Interactive Launcher** if performance is an issue. Add **Two-Phase** when you want the best of both worlds.
+</Tip>

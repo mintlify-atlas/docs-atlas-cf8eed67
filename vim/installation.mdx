@@ -1,0 +1,167 @@
+---
+title: "Vim Plugin Installation"
+description: "Install and configure the fzf Vim plugin with vim-plug or manual setup"
+---
+
+Once you have fzf installed on your system, you can enable it inside Vim by adding the directory to your `&runtimepath`.
+
+## Using vim-plug (Recommended)
+
+[vim-plug](https://github.com/junegunn/vim-plug) is the easiest way to install the fzf Vim plugin. Add one of the following to your Vim configuration file:
+
+### Option 1: Use Local Installation
+
+If you've already installed fzf via Homebrew or another package manager, point vim-plug to that location:
+
+<CodeGroup>
+
+```vim Homebrew (Intel Mac)
+" If installed using Homebrew
+Plug '/usr/local/opt/fzf'
+```
+
+```vim Homebrew (Apple Silicon)
+" If installed using Homebrew on Apple Silicon
+Plug '/opt/homebrew/opt/fzf'
+```
+
+```vim Git Clone
+" If you have cloned fzf on ~/.fzf directory
+Plug '~/.fzf'
+```
+
+</CodeGroup>
+
+### Option 2: Install from GitHub
+
+For the latest Vim plugin file from GitHub rather than the one included in the package:
+
+```vim
+" Basic installation
+Plug 'junegunn/fzf'
+```
+
+The Vim plugin will pick up the fzf binary available on your system. If fzf is not found on `$PATH`, it will ask if it should download the latest binary for you.
+
+### Option 3: Auto-Update Binary
+
+To ensure you always have the latest version of the binary, set up a post-update hook:
+
+```vim
+" Automatically install/update fzf binary
+Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
+```
+
+<Tip>
+This is the recommended approach as it keeps both the plugin and binary up to date automatically.
+</Tip>
+
+## Installing fzf.vim (Optional)
+
+While the base fzf plugin provides core functions, [fzf.vim](https://github.com/junegunn/fzf.vim) is a separate project that provides many useful commands like `:Files`, `:Buffers`, `:Rg`, and more.
+
+```vim
+" Install both fzf and fzf.vim
+Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
+Plug 'junegunn/fzf.vim'
+```
+
+<Note>
+`junegunn/fzf` provides the basic library functions, while `junegunn/fzf.vim` provides a variety of useful pre-built commands.
+</Note>
+
+## Manual Installation
+
+If you don't use vim-plug, you can manually add fzf to your runtime path. Add one of the following lines to your `.vimrc` or `init.vim`:
+
+<CodeGroup>
+
+```vim Homebrew (Intel Mac)
+" If installed using Homebrew
+set rtp+=/usr/local/opt/fzf
+```
+
+```vim Homebrew (Apple Silicon)
+" If installed using Homebrew on Apple Silicon
+set rtp+=/opt/homebrew/opt/fzf
+```
+
+```vim Git Clone
+" If you have cloned fzf on ~/.fzf directory
+set rtp+=~/.fzf
+```
+
+</CodeGroup>
+
+<Warning>
+The path may differ depending on your installation method and operating system. Make sure the path points to the directory containing the `plugin` subdirectory.
+</Warning>
+
+## Verify Installation
+
+After installing, restart Vim and try running:
+
+```vim
+:FZF
+```
+
+You should see the fzf interface appear. If it works, you're all set!
+
+## Terminal Buffer Colors
+
+On the latest versions of Vim and Neovim, fzf will start in a terminal buffer. If you find the default ANSI colors to be different from your expectations, you can configure them:
+
+<Tabs>
+  <Tab title="Neovim">
+    ```vim
+    " Terminal colors for seoul256 color scheme
+    let g:terminal_color_0 = '#4e4e4e'
+    let g:terminal_color_1 = '#d68787'
+    let g:terminal_color_2 = '#5f865f'
+    let g:terminal_color_3 = '#d8af5f'
+    let g:terminal_color_4 = '#85add4'
+    let g:terminal_color_5 = '#d7afaf'
+    let g:terminal_color_6 = '#87afaf'
+    let g:terminal_color_7 = '#d0d0d0'
+    let g:terminal_color_8 = '#626262'
+    let g:terminal_color_9 = '#d75f87'
+    let g:terminal_color_10 = '#87af87'
+    let g:terminal_color_11 = '#ffd787'
+    let g:terminal_color_12 = '#add4fb'
+    let g:terminal_color_13 = '#ffafaf'
+    let g:terminal_color_14 = '#87d7d7'
+    let g:terminal_color_15 = '#e4e4e4'
+    ```
+  </Tab>
+  <Tab title="Vim">
+    ```vim
+    " Terminal colors for seoul256 color scheme
+    let g:terminal_ansi_colors = [
+      \ '#4e4e4e', '#d68787', '#5f865f', '#d8af5f',
+      \ '#85add4', '#d7afaf', '#87afaf', '#d0d0d0',
+      \ '#626262', '#d75f87', '#87af87', '#ffd787',
+      \ '#add4fb', '#ffafaf', '#87d7d7', '#e4e4e4'
+    \ ]
+    ```
+  </Tab>
+</Tabs>
+
+## Upgrading
+
+To upgrade fzf:
+
+<Steps>
+  <Step title="Update via vim-plug">
+    Run `:PlugUpdate fzf` in Vim to update the plugin.
+  </Step>
+  
+  <Step title="Update the binary">
+    If you used the `{ 'do': { -> fzf#install() } }` hook, the binary will be updated automatically. Otherwise, update fzf using your system package manager.
+  </Step>
+</Steps>
+
+## Next Steps
+
+<Card title="Usage Guide" icon="book" href="/vim/usage">
+  Learn how to use fzf in Vim with custom commands and configurations
+</Card>

@@ -1,0 +1,344 @@
+---
+title: Display Modes
+description: Control how fzf displays its interface with fullscreen, height, and tmux popup modes
+---
+
+fzf supports multiple display modes that determine how the interface is presented. By default, fzf runs in fullscreen mode, but you can choose alternative modes depending on your workflow and environment.
+
+## Fullscreen Mode (Default)
+
+By default, fzf takes over the entire terminal screen. This provides maximum space for viewing results and is suitable when you want to focus entirely on the selection process.
+
+```bash
+fzf
+```
+
+## Height Mode
+
+With the `--height` option, fzf starts below the cursor with a specified height instead of taking over the entire screen. This allows you to see the previous commands and their output above the fzf interface.
+
+<ParamField path="--height" type="string">
+  Display fzf window below the cursor with the given height instead of using fullscreen.
+
+  **Format:** `[~]HEIGHT[%]` or `-HEIGHT`
+
+  - `HEIGHT%` - Percentage of screen height
+  - `HEIGHT` - Absolute number of lines
+  - `~HEIGHT` - Maximum height (adaptive)
+  - `-HEIGHT` - Screen height minus value
+</ParamField>
+
+### Basic Height Mode
+
+```bash
+# Use 40% of screen height
+fzf --height 40%
+```
+
+### Height Mode with Layout Options
+
+The `reverse` layout and `--border` option work particularly well with height mode:
+
+```bash
+# Reverse layout with border
+fzf --height 40% --layout reverse --border
+```
+
+```bash
+# More complete configuration
+fzf --height 40% --layout reverse --info inline --border --margin 1 --padding 1
+```
+
+<Tip>
+  You can add height options to `FZF_DEFAULT_OPTS` to make them apply by default:
+  
+  ```bash
+  export FZF_DEFAULT_OPTS="--height 40% --layout reverse --border"
+  ```
+</Tip>
+
+### Adaptive Height
+
+Prepending `~` to the height makes fzf use adaptive sizing - it will take only as many lines as needed to display the results, up to the specified maximum:
+
+```bash
+# Will take as few lines as possible to display the list
+seq 3 | fzf --height ~100%
+
+# With more items, uses more space (up to 100%)
+seq 3000 | fzf --height ~100%
+```
+
+### Negative Height
+
+Height can be a negative number, calculated as terminal height minus the given value:
+
+```bash
+# Screen height - 3 lines
+fzf --height -3
+```
+
+### Complete Example
+
+<CodeGroup>
+```bash Basic
+fzf --height 40%
+```
+
+```bash With Reverse Layout
+fzf --height 40% --layout reverse
+```
+
+```bash With Border and Info
+fzf --height 40% --layout reverse --info inline --border
+```
+
+```bash Full Configuration
+fzf --height 40% --layout reverse --info inline --border --margin 1 --padding 1
+```
+</CodeGroup>
+
+## Tmux Mode
+
+When running inside tmux, you can use the `--tmux` option to display fzf in a tmux popup window. This provides a floating interface that overlays your current tmux session.
+
+<Note>
+  Requires tmux 3.3 or later. The `--tmux` option is silently ignored when not running inside tmux.
+</Note>
+
+<ParamField path="--tmux" type="string">
+  Start fzf in a tmux popup window.
+
+  **Format:** `[POSITION][,SIZE[%]][,SIZE[%]][,border-native]`
+
+  **Positions:**
+  - `center` - Center of screen (default)
+  - `top` / `up` - Top of screen
+  - `bottom` / `down` - Bottom of screen
+  - `left` - Left side of screen
+  - `right` - Right side of screen
+
+  **Sizes:**
+  - First size: width (for center) or main dimension
+  - Second size: height (for center) or secondary dimension
+  - Values can be absolute numbers or percentages
+
+  **Border:**
+  - `border-native` - Use tmux's native border style
+</ParamField>
+
+### Basic Tmux Mode
+
+```bash
+# Center popup with default size (50% width and height)
+fzf --tmux
+
+# Alternative: explicitly specify center
+fzf --tmux center
+```
+
+### Sizing
+
+```bash
+# Center popup with 80% width and height
+fzf --tmux 80%
+
+# Center with 100% width and 50% height
+fzf --tmux 100%,50%
+```
+
+### Positioning
+
+<Tabs>
+  <Tab title="Top">
+    ```bash
+    # Top of screen with 40% height
+    fzf --tmux top,40%
+    ```
+  </Tab>
+  <Tab title="Bottom">
+    ```bash
+    # Bottom of screen with 80% width and 40% height
+    fzf --tmux bottom,80%,40%
+    ```
+  </Tab>
+  <Tab title="Left">
+    ```bash
+    # Left side with 40% width and 90% height
+    fzf --tmux left,40%,90%
+    ```
+  </Tab>
+  <Tab title="Right">
+    ```bash
+    # Right side with 40% width (full height by default)
+    fzf --tmux right,40%
+    ```
+  </Tab>
+</Tabs>
+
+### Complete Examples
+
+<CodeGroup>
+```bash Center (Default)
+# Center, 50% width and height
+fzf --tmux center
+```
+
+```bash Large Center
+# Center, 80% width and height
+fzf --tmux 80%
+```
+
+```bash Full Width Center
+# Center, 100% width and 50% height
+fzf --tmux 100%,50%
+```
+
+```bash Bottom Panel
+# Bottom, 40% height
+fzf --tmux top,40%
+```
+
+```bash Side Panel
+# Left, 40% width
+fzf --tmux left,40%
+```
+
+```bash Custom Bottom
+# Bottom, 80% width, 40% height
+fzf --tmux bottom,80%,40%
+```
+</CodeGroup>
+
+### Tmux with Native Border
+
+You can use tmux's native border style by adding `border-native`:
+
+```bash
+fzf --tmux center,80%,border-native
+```
+
+## Combining Height and Tmux Modes
+
+You can specify both `--height` and `--tmux` options. The `--tmux` option takes precedence when running inside tmux, and `--height` is used as a fallback otherwise.
+
+```bash
+# Open in tmux popup if on tmux, otherwise use --height mode
+fzf --height 40% --tmux bottom,40%
+```
+
+This is particularly useful in `FZF_DEFAULT_OPTS` to provide consistent behavior across different environments:
+
+```bash
+export FZF_DEFAULT_OPTS='--height 40% --tmux bottom,40% --layout reverse --border top'
+```
+
+<Note>
+  When both options are specified, the one that appears later in the argument list takes precedence when both conditions are met. In the example above, `--tmux` is specified after `--height`, so it takes precedence when running in tmux.
+</Note>
+
+## Layout Options
+
+Regardless of the display mode, you can customize the layout with these options:
+
+<ParamField path="--layout" type="string" default="default">
+  Choose the layout orientation.
+
+  **Options:**
+  - `default` - Input at the top, list below
+  - `reverse` - List at the top, input below
+  - `reverse-list` - Reverse the list order
+</ParamField>
+
+<ParamField path="--border" type="string" default="rounded">
+  Draw border around the finder.
+
+  **Styles:** `rounded`, `sharp`, `bold`, `block`, `thinblock`, `double`, `horizontal`, `vertical`, `top`, `bottom`, `left`, `right`, `none`
+</ParamField>
+
+<ParamField path="--margin" type="string">
+  Screen margin (TRBL | TB,RL | T,RL,B | T,R,B,L).
+
+  ```bash
+  fzf --margin=1        # 1 unit margin on all sides
+  fzf --margin=1,2      # 1 unit top/bottom, 2 units left/right
+  fzf --margin=1,2,3,4  # 1 top, 2 right, 3 bottom, 4 left
+  ```
+</ParamField>
+
+<ParamField path="--padding" type="string">
+  Padding inside border (TRBL | TB,RL | T,RL,B | T,R,B,L).
+
+  ```bash
+  fzf --padding=1        # 1 unit padding on all sides
+  fzf --padding=1,2      # 1 unit top/bottom, 2 units left/right
+  fzf --padding=1,2,3,4  # 1 top, 2 right, 3 bottom, 4 left
+  ```
+</ParamField>
+
+## Style Presets
+
+fzf provides style presets that combine multiple layout options:
+
+<ParamField path="--style" type="string" default="default">
+  Apply a style preset.
+
+  **Presets:**
+  - `default` - Standard appearance
+  - `minimal` - Minimalist interface
+  - `full` - Feature-rich interface with borders and labels
+</ParamField>
+
+```bash
+# Use full style preset
+fzf --style full --preview 'cat {}'
+```
+
+## Display Mode Examples
+
+### File Browser with Height Mode
+
+```bash
+fd --type f | fzf --height 60% \
+  --layout reverse \
+  --info inline \
+  --border \
+  --preview 'bat --color=always {}' \
+  --preview-window right:60%:border-left
+```
+
+### Git Log Browser in Tmux
+
+```bash
+git log --oneline --color=always | fzf --tmux 90%,80% \
+  --ansi \
+  --layout reverse \
+  --border \
+  --preview 'git show --color=always {1}' \
+  --bind 'enter:become(git show {1})'
+```
+
+### Process Viewer with Adaptive Height
+
+```bash
+ps -ef | fzf --height ~100% \
+  --layout reverse \
+  --border \
+  --header-lines 1 \
+  --info inline
+```
+
+### Directory Switcher
+
+```bash
+fd --type d | fzf --height 50% --tmux center,70% \
+  --layout reverse \
+  --border rounded \
+  --prompt 'Directory> ' \
+  --preview 'tree -C -L 2 {}' \
+  --bind 'enter:become(cd {})'
+```
+
+<Warning>
+  For older tmux versions that don't support popup windows, check out the [fzf-tmux](https://github.com/junegunn/fzf/blob/master/bin/fzf-tmux) script which creates fzf in a regular tmux pane.
+</Warning>

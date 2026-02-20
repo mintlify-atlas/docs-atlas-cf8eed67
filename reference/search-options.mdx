@@ -1,0 +1,258 @@
+---
+title: Search Options
+description: Configure search behavior, matching algorithms, and field selection in fzf
+---
+
+Control how fzf searches and matches items, including exact matching, case sensitivity, field selection, and scoring schemes.
+
+## Matching Mode
+
+<ParamField path="-e, --exact" type="boolean">
+  Enable exact-match mode instead of fuzzy matching
+  
+  ```bash
+  # Only match items that contain exact string
+  fzf -e
+  ```
+</ParamField>
+
+<ParamField path="+x, --no-extended" type="boolean">
+  Disable extended-search mode (disables special tokens like `^`, `$`, `'`, `!`)
+  
+  ```bash
+  fzf +x
+  ```
+</ParamField>
+
+## Case Sensitivity
+
+<ParamField path="-i, --ignore-case" type="boolean">
+  Case-insensitive match
+  
+  ```bash
+  fzf -i
+  ```
+</ParamField>
+
+<ParamField path="+i, --no-ignore-case" type="boolean">
+  Case-sensitive match
+  
+  ```bash
+  fzf +i
+  ```
+</ParamField>
+
+<ParamField path="--smart-case" type="boolean" default="true">
+  Case-insensitive match unless the query contains uppercase characters (default behavior)
+  
+  ```bash
+  fzf --smart-case
+  ```
+</ParamField>
+
+## Scoring and Ranking
+
+<ParamField path="--scheme" type="string" default="default">
+  Scoring scheme to use for ranking results
+  
+  <Tabs>
+    <Tab title="default">
+      Generic scheme designed to work well with any kind of input
+      
+      ```bash
+      fzf --scheme=default
+      ```
+    </Tab>
+    
+    <Tab title="path">
+      Optimized for file paths - gives higher scores to matches on the basename
+      
+      ```bash
+      fzf --scheme=path
+      ```
+    </Tab>
+    
+    <Tab title="history">
+      Suitable for command history or any input where chronological ordering is important
+      
+      ```bash
+      fzf --scheme=history
+      ```
+    </Tab>
+  </Tabs>
+</ParamField>
+
+<ParamField path="--tiebreak" type="string" default="length">
+  Comma-separated list of sort criteria to apply when the scores are tied
+  
+  Available criteria:
+  - `length` - Prefer shorter items
+  - `chunk` - Prefer items with fewer matched chunks
+  - `pathname` - Prefer items with shallower directory depth
+  - `begin` - Prefer matches closer to the beginning
+  - `end` - Prefer matches closer to the end
+  - `index` - Prefer items that appeared earlier in the input
+  
+  ```bash
+  # Prefer matches at the beginning, then by length
+  fzf --tiebreak=begin,length
+  
+  # For file paths, prefer shallower paths
+  fzf --tiebreak=pathname,length
+  ```
+</ParamField>
+
+<ParamField path="+s, --no-sort" type="boolean">
+  Do not sort the result - items will appear in input order
+  
+  ```bash
+  fzf +s
+  ```
+</ParamField>
+
+## Field Selection
+
+<ParamField path="-n, --nth" type="string">
+  Comma-separated list of field index expressions for limiting search scope. Each can be a non-zero integer or a range expression (`[BEGIN]..[END]`)
+  
+  <Tabs>
+    <Tab title="Single Field">
+      ```bash
+      # Only search in the 2nd field
+      ps aux | fzf -n 2
+      ```
+    </Tab>
+    
+    <Tab title="Multiple Fields">
+      ```bash
+      # Search in 1st and 3rd fields
+      fzf -n 1,3
+      ```
+    </Tab>
+    
+    <Tab title="Field Ranges">
+      ```bash
+      # Search from 2nd field to end
+      fzf -n 2..
+      
+      # Search in fields 2-4
+      fzf -n 2..4
+      
+      # Search from beginning to 3rd field
+      fzf -n ..3
+      ```
+    </Tab>
+  </Tabs>
+  
+  <Note>
+    Fields are 1-indexed. Negative indices are supported (e.g., `-1` is the last field).
+  </Note>
+</ParamField>
+
+<ParamField path="--with-nth" type="string">
+  Transform the presentation of each line using field index expressions. The search is still performed on the original line.
+  
+  ```bash
+  # Display only filename (last field) but search full path
+  find . -type f | fzf --with-nth -1 -d /
+  
+  # Display fields 2 and 4
+  ps aux | fzf --with-nth 2,4
+  ```
+</ParamField>
+
+<ParamField path="--accept-nth" type="string">
+  Define which fields to print on accept (Enter key)
+  
+  ```bash
+  # Print only the process ID (field 2)
+  ps aux | fzf --accept-nth 2
+  ```
+</ParamField>
+
+<ParamField path="-d, --delimiter" type="string" default="AWK-style">
+  Field delimiter regex for field splitting
+  
+  <Tabs>
+    <Tab title="Simple Delimiter">
+      ```bash
+      # Use comma as delimiter
+      fzf -d ,
+      
+      # Use colon as delimiter
+      git grep --line-number . | fzf -d :
+      ```
+    </Tab>
+    
+    <Tab title="Regex Delimiter">
+      ```bash
+      # Use regex (one or more spaces)
+      fzf -d ' +'
+      ```
+    </Tab>
+  </Tabs>
+  
+  <Warning>
+    A plain string delimiter should be preferred over a regular expression delimiter for better performance.
+  </Warning>
+</ParamField>
+
+## Text Processing
+
+<ParamField path="--literal" type="boolean">
+  Do not normalize latin script letters (e.g., don't treat `é` and `e` as equivalent)
+  
+  ```bash
+  fzf --literal
+  ```
+</ParamField>
+
+## Search Control
+
+<ParamField path="--disabled" type="boolean">
+  Do not perform search - useful with `reload` action for dynamic filtering
+  
+  ```bash
+  # Interactive ripgrep
+  : | fzf --disabled \
+    --bind 'change:reload:rg --line-number {q} || true' \
+    --delimiter : --nth 3..
+  ```
+  
+  <Tip>
+    This is commonly used with the `reload` bind action to implement interactive search tools.
+  </Tip>
+</ParamField>
+
+<ParamField path="--tail" type="number">
+  Maximum number of items to keep in memory. Older items are discarded.
+  
+  ```bash
+  # Only keep last 10000 items
+  tail -f /var/log/syslog | fzf --tail 10000
+  ```
+</ParamField>
+
+## Examples
+
+<CodeGroup>
+```bash Case-insensitive git files
+git ls-files | fzf -i
+```
+
+```bash Search history with path scheme
+history | fzf --scheme=history --tiebreak=index
+```
+
+```bash Search only in filenames
+find . -type f | fzf -d / -n -1
+```
+
+```bash Process list with field selection
+ps aux | fzf --nth 11.. --with-nth 2,11..
+```
+</CodeGroup>
+
+<Note>
+  Combine these options with [layout options](/reference/layout-options) and [preview options](/reference/preview-options) for a complete experience.
+</Note>

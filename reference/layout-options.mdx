@@ -1,0 +1,314 @@
+---
+title: Layout Options
+description: Control window layout, borders, margins, and positioning in fzf
+---
+
+Configure the layout and visual structure of fzf including window arrangement, borders, spacing, and section organization.
+
+## Layout Arrangement
+
+<ParamField path="--layout" type="string" default="default">
+  Choose the overall layout arrangement
+  
+  <Tabs>
+    <Tab title="default">
+      Standard layout with input at the top and list below
+      
+      ```bash
+      fzf --layout=default
+      ```
+    </Tab>
+    
+    <Tab title="reverse">
+      Reverse layout with input at the bottom
+      
+      ```bash
+      fzf --layout=reverse
+      ```
+      
+      <Tip>
+        Works well with `--height` mode as it keeps the input near the command line.
+      </Tip>
+    </Tab>
+    
+    <Tab title="reverse-list">
+      Only reverse the list section, keeping input at the top
+      
+      ```bash
+      fzf --layout=reverse-list
+      ```
+    </Tab>
+  </Tabs>
+</ParamField>
+
+## Borders
+
+<ParamField path="--border" type="string" default="rounded">
+  Draw border around the finder
+  
+  Available styles:
+  - `rounded` - Rounded corners (default)
+  - `sharp` - Sharp corners
+  - `bold` - Bold lines
+  - `block` - Block characters
+  - `thinblock` - Thin block characters
+  - `double` - Double lines
+  - `horizontal` - Horizontal lines only
+  - `vertical` - Vertical lines only
+  - `top` - Top border only
+  - `bottom` - Bottom border only
+  - `left` - Left border only
+  - `right` - Right border only
+  - `line` - Simple line border
+  - `none` - No border
+  
+  <Tabs>
+    <Tab title="Basic Borders">
+      ```bash
+      # Rounded corners (default)
+      fzf --border=rounded
+      
+      # Sharp corners
+      fzf --border=sharp
+      
+      # Bold lines
+      fzf --border=bold
+      ```
+    </Tab>
+    
+    <Tab title="Partial Borders">
+      ```bash
+      # Only top border
+      fzf --border=top
+      
+      # Only horizontal borders
+      fzf --border=horizontal
+      
+      # No border
+      fzf --border=none
+      ```
+    </Tab>
+  </Tabs>
+</ParamField>
+
+<ParamField path="--border-label" type="string">
+  Label to print on the border
+  
+  ```bash
+  fzf --border --border-label=' Files '
+  fzf --border --border-label=' Search '
+  ```
+</ParamField>
+
+<ParamField path="--border-label-pos" type="string" default="0">
+  Position of the border label
+  
+  - Positive integer: columns from left
+  - Negative integer: columns from right
+  - Append `:bottom` to place at bottom border
+  
+  ```bash
+  # Center (default)
+  fzf --border --border-label=' Files ' --border-label-pos=0
+  
+  # 5 columns from left
+  fzf --border --border-label=' Files ' --border-label-pos=5
+  
+  # 5 columns from right
+  fzf --border --border-label=' Files ' --border-label-pos=-5
+  
+  # Bottom border, centered
+  fzf --border --border-label=' Files ' --border-label-pos=0:bottom
+  ```
+</ParamField>
+
+## Section Borders
+
+fzf allows separate borders for each section:
+
+<ParamField path="--list-border" type="string" default="rounded">
+  Draw border around the list section
+  
+  ```bash
+  fzf --list-border=rounded
+  fzf --list-border=double
+  fzf --list-border=none
+  ```
+</ParamField>
+
+<ParamField path="--list-label" type="string">
+  Label for the list border
+  
+  ```bash
+  fzf --list-border --list-label=' Results '
+  ```
+</ParamField>
+
+<ParamField path="--list-label-pos" type="string">
+  Position of the list label (same format as `--border-label-pos`)
+  
+  ```bash
+  fzf --list-border --list-label=' Results ' --list-label-pos=0
+  ```
+</ParamField>
+
+<ParamField path="--input-border" type="string" default="rounded">
+  Draw border around the input section
+  
+  ```bash
+  fzf --input-border=rounded
+  fzf --input-border=line
+  ```
+</ParamField>
+
+<ParamField path="--input-label" type="string">
+  Label for the input border
+  
+  ```bash
+  fzf --input-border --input-label=' Query '
+  ```
+</ParamField>
+
+<ParamField path="--input-label-pos" type="string">
+  Position of the input label
+  
+  ```bash
+  fzf --input-border --input-label=' Query ' --input-label-pos=0
+  ```
+</ParamField>
+
+<ParamField path="--header-border" type="string" default="rounded">
+  Draw border around the header section
+  
+  ```bash
+  fzf --header='Instructions' --header-border=rounded
+  ```
+</ParamField>
+
+<ParamField path="--header-label" type="string">
+  Label for the header border
+  
+  ```bash
+  fzf --header='...' --header-border --header-label=' Help '
+  ```
+</ParamField>
+
+<ParamField path="--header-label-pos" type="string">
+  Position of the header label
+</ParamField>
+
+<ParamField path="--footer-border" type="string" default="line">
+  Draw border around the footer section
+  
+  ```bash
+  fzf --footer='Status' --footer-border=line
+  ```
+</ParamField>
+
+<ParamField path="--footer-label" type="string">
+  Label for the footer border
+</ParamField>
+
+<ParamField path="--footer-label-pos" type="string">
+  Position of the footer label
+</ParamField>
+
+## Spacing
+
+<ParamField path="--margin" type="string">
+  Screen margin around fzf window
+  
+  Format: `TRBL | TB,RL | T,RL,B | T,R,B,L`
+  
+  <Tabs>
+    <Tab title="All Sides">
+      ```bash
+      # 2 lines/columns on all sides
+      fzf --margin=2
+      ```
+    </Tab>
+    
+    <Tab title="Vertical/Horizontal">
+      ```bash
+      # 2 lines top/bottom, 4 columns left/right
+      fzf --margin=2,4
+      ```
+    </Tab>
+    
+    <Tab title="Individual Sides">
+      ```bash
+      # Top, Right, Bottom, Left
+      fzf --margin=1,2,3,4
+      
+      # Top, Left/Right, Bottom
+      fzf --margin=1,2,3
+      ```
+    </Tab>
+  </Tabs>
+</ParamField>
+
+<ParamField path="--padding" type="string">
+  Padding inside border (same format as `--margin`)
+  
+  ```bash
+  # 1 line/column padding on all sides
+  fzf --border --padding=1
+  
+  # Different padding for each side
+  fzf --border --padding=1,2,1,2
+  ```
+</ParamField>
+
+## Complete Layout Example
+
+```bash
+git ls-files | fzf --style=full \
+  --border --padding=1,2 \
+  --border-label=' Demo ' \
+  --input-label=' Input ' \
+  --header-label=' File Type ' \
+  --preview='cat {}' \
+  --color='border:#aaaaaa,label:#cccccc' \
+  --color='preview-border:#9999cc,preview-label:#ccccff' \
+  --color='list-border:#669966,list-label:#99cc99' \
+  --color='input-border:#996666,input-label:#ffcccc' \
+  --color='header-border:#6699cc,header-label:#99ccff'
+```
+
+## Layout Presets
+
+<CodeGroup>
+```bash Minimal
+fzf --height=40% \
+    --layout=reverse \
+    --border=none \
+    --info=inline
+```
+
+```bash Standard
+fzf --height=40% \
+    --layout=reverse \
+    --border=rounded \
+    --info=inline
+```
+
+```bash Full
+fzf --border=rounded \
+    --padding=1 \
+    --margin=1 \
+    --preview='cat {}' \
+    --preview-window=right:50%:border-left
+```
+
+```bash Split Sections
+fzf --list-border=rounded \
+    --input-border=rounded \
+    --header-border=rounded \
+    --preview='cat {}' \
+    --preview-window=border-left
+```
+</CodeGroup>
+
+<Tip>
+  Use `--style=full` as a starting point, then customize individual borders and labels to create your perfect layout.
+</Tip>

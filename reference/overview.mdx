@@ -1,0 +1,137 @@
+---
+title: Command Reference Overview
+description: Complete reference for fzf command-line options and configuration
+---
+
+fzf is an interactive filter program for any kind of list. It implements a "fuzzy" matching algorithm, so you can quickly type in patterns with omitted characters and still get the results you want.
+
+## Usage
+
+```bash
+fzf [options]
+```
+
+## Option Categories
+
+fzf provides a comprehensive set of command-line options organized into the following categories:
+
+<CardGroup cols={2}>
+  <Card title="Search Options" icon="magnifying-glass" href="/reference/search-options">
+    Configure search behavior, matching algorithms, and field selection
+  </Card>
+  
+  <Card title="Display Options" icon="palette" href="/reference/display-options">
+    Customize colors, styles, and visual appearance
+  </Card>
+  
+  <Card title="Layout Options" icon="table-layout" href="/reference/layout-options">
+    Control window layout, borders, margins, and positioning
+  </Card>
+  
+  <Card title="Input/Output" icon="arrows-left-right" href="/reference/input-output">
+    Manage input/output formats and data processing
+  </Card>
+  
+  <Card title="Preview Options" icon="eye" href="/reference/preview-options">
+    Configure preview window behavior and appearance
+  </Card>
+  
+  <Card title="Key Bindings" icon="keyboard" href="/reference/keybindings">
+    Define custom key bindings and event actions
+  </Card>
+</CardGroup>
+
+## Shell Integration
+
+fzf provides deep integration with popular shells:
+
+<CardGroup cols={3}>
+  <Card title="Bash" icon="terminal" href="/reference/shell/bash">
+    Bash integration and completion
+  </Card>
+  
+  <Card title="Zsh" icon="terminal" href="/reference/shell/zsh">
+    Zsh integration and completion
+  </Card>
+  
+  <Card title="Fish" icon="terminal" href="/reference/shell/fish">
+    Fish shell integration
+  </Card>
+</CardGroup>
+
+## Quick Reference
+
+### Common Options
+
+```bash
+# Case-insensitive search
+fzf -i
+
+# Multi-select mode
+fzf -m
+
+# With preview window
+fzf --preview 'cat {}'
+
+# Reverse layout
+fzf --layout reverse
+
+# Custom height
+fzf --height 40%
+```
+
+### Environment Variables
+
+<ParamField path="FZF_DEFAULT_COMMAND" type="string">
+  Default command to use when input is tty
+  
+  ```bash
+  export FZF_DEFAULT_COMMAND='fd --type f'
+  ```
+</ParamField>
+
+<ParamField path="FZF_DEFAULT_OPTS" type="string">
+  Default options applied to all fzf invocations
+  
+  ```bash
+  export FZF_DEFAULT_OPTS="--layout=reverse --info=inline"
+  ```
+</ParamField>
+
+<ParamField path="FZF_DEFAULT_OPTS_FILE" type="string">
+  Location of the file to read default options from
+  
+  ```bash
+  export FZF_DEFAULT_OPTS_FILE=~/.fzfrc
+  ```
+</ParamField>
+
+<ParamField path="FZF_API_KEY" type="string">
+  X-API-Key header for HTTP server (--listen)
+</ParamField>
+
+## Getting Help
+
+<CodeGroup>
+```bash Show help
+fzf --help
+```
+
+```bash Man page
+fzf --man
+```
+
+```bash Version
+fzf --version
+```
+</CodeGroup>
+
+<Note>
+  For detailed information about each option, see the specific reference pages linked above.
+</Note>
+
+## Additional Resources
+
+- [fzf GitHub Repository](https://github.com/junegunn/fzf)
+- [Advanced Examples](https://github.com/junegunn/fzf/blob/master/ADVANCED.md)
+- [Wiki Examples](https://github.com/junegunn/fzf/wiki/examples)

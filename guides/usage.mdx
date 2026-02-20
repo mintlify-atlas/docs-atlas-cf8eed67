@@ -1,0 +1,192 @@
+---
+title: Basic Usage
+description: Learn the basic usage patterns and workflows for fzf
+---
+
+fzf is an interactive filter program that reads a list from STDIN and writes the selected item to STDOUT.
+
+## Basic Command
+
+The simplest way to use fzf is to pipe a list of items to it:
+
+```bash
+find * -type f | fzf > selected
+```
+
+This command will:
+1. Generate a list of files using `find`
+2. Launch fzf's interactive finder
+3. Write the selected file to the `selected` file
+
+## Using Without STDIN
+
+When run without STDIN, fzf automatically traverses the file system:
+
+```bash
+vim $(fzf)
+```
+
+This will:
+- Traverse files under the current directory
+- Open the selected file in Vim
+
+<Note>
+You can override the default file traversal behavior:
+- Set `$FZF_DEFAULT_COMMAND` to a command that generates a custom list
+- Or configure `--walker`, `--walker-root`, and `--walker-skip` options in `$FZF_DEFAULT_OPTS`
+</Note>
+
+## Using the Finder
+
+Once fzf is launched, you can interact with it using these key bindings:
+
+<Steps>
+  <Step title="Navigate">
+    - `CTRL-K` / `CTRL-J` (or `CTRL-P` / `CTRL-N`) to move cursor up and down
+    - Mouse: scroll, click, double-click
+  </Step>
+  
+  <Step title="Select">
+    - `Enter` key to select the item
+    - `CTRL-C` / `CTRL-G` / `ESC` to exit without selecting
+  </Step>
+  
+  <Step title="Multi-select mode (-m)">
+    - `TAB` and `Shift-TAB` to mark multiple items
+    - Mouse: shift-click and shift-scroll
+  </Step>
+</Steps>
+
+## Display Modes
+
+fzf supports multiple display modes to fit different workflows.
+
+### Fullscreen Mode (Default)
+
+By default, fzf runs in fullscreen mode:
+
+```bash
+fzf
+```
+
+### Height Mode
+
+Display fzf below the cursor with a specific height:
+
+```bash
+fzf --height 40%
+```
+
+<CodeGroup>
+```bash Basic height
+fzf --height 40%
+```
+
+```bash With reverse layout and border
+fzf --height 40% --layout reverse --border
+```
+
+```bash Maximum height (adaptive)
+# Takes as few lines as possible
+seq 3 | fzf --height ~100%
+seq 3000 | fzf --height ~100%
+```
+
+```bash Negative height
+# Screen height - 3
+fzf --height -3
+```
+</CodeGroup>
+
+### tmux Mode
+
+Open fzf in a tmux popup (requires tmux 3.3+):
+
+<CodeGroup>
+```bash Center popup
+fzf --tmux center         # 50% width and height
+fzf --tmux 80%            # 80% width and height
+fzf --tmux 100%,50%       # 100% width, 50% height
+```
+
+```bash Side popups
+fzf --tmux left,40%       # Left, 40% width
+fzf --tmux right,40%,90%  # Right, 40% width, 90% height
+```
+
+```bash Top/Bottom popups
+fzf --tmux top,40%        # Top, 40% height
+fzf --tmux bottom,80%,40% # Bottom, 80% width, 40% height
+```
+</CodeGroup>
+
+<Tip>
+The `--tmux` option is silently ignored when you're not running inside tmux, so you can safely add it to `$FZF_DEFAULT_OPTS`:
+
+```bash
+# Open in tmux popup if on tmux, otherwise use --height mode
+export FZF_DEFAULT_OPTS='--height 40% --tmux bottom,40% --layout reverse --border top'
+```
+</Tip>
+
+## Practical Examples
+
+### Open File in Editor
+
+<CodeGroup>
+```bash Simple (not robust)
+vim $(fzf)
+```
+
+```bash Robust with xargs
+fzf --print0 | xargs -0 -o vim
+```
+
+```bash Using become action
+fzf --bind 'enter:become(vim {})'
+```
+</CodeGroup>
+
+<Warning>
+The simple `vim $(fzf)` approach has issues:
+- Vim opens an empty file when you press CTRL-C
+- Vim opens an empty file when you press ENTER on empty results
+- Doesn't handle filenames with spaces correctly
+
+Use the `xargs` or `become` approach for robust file handling.
+</Warning>
+
+### Multi-select and Open
+
+```bash
+# Select multiple files and open them
+fzf --multi --bind 'enter:become(vim {+})'
+```
+
+### Different Actions for Different Keys
+
+```bash
+# Open with Vim on Enter, Emacs on Ctrl-E
+fzf --bind 'enter:become(vim {}),ctrl-e:become(emacs {})'
+```
+
+### Navigate to Line Number
+
+```bash
+# Search with line numbers and open at specific line
+git grep --line-number . | \
+  fzf --delimiter : --nth 3.. --bind 'enter:become(vim {1} +{2})'
+```
+
+## Emacs-style Key Bindings
+
+fzf supports Emacs-style key bindings by default:
+
+- `CTRL-A` - Beginning of line
+- `CTRL-E` - End of line
+- `CTRL-W` - Delete word backward
+- `CTRL-U` - Clear line
+- `ALT-B` - Backward word
+- `ALT-F` - Forward word
+
+See the [Key Bindings](/guides/key-bindings) guide for the complete list.

@@ -1,0 +1,325 @@
+---
+title: Preview Window Options
+description: Configure preview window behavior, appearance, and controls in fzf
+---
+
+The preview window shows additional information about the selected item. Configure its layout, behavior, and appearance with these options.
+
+## Basic Preview
+
+<ParamField path="--preview" type="string">
+  Command to preview highlighted line. Use `{}` as placeholder for the selected item.
+  
+  <Tabs>
+    <Tab title="Simple Preview">
+      ```bash
+      # Show file contents
+      fzf --preview='cat {}'
+      
+      # Show file type
+      fzf --preview='file {}'
+      ```
+    </Tab>
+    
+    <Tab title="Syntax Highlighting">
+      ```bash
+      # Using bat
+      fzf --preview='bat --color=always --style=numbers {}'
+      
+      # Using highlight
+      fzf --preview='highlight -O ansi {}'
+      ```
+    </Tab>
+    
+    <Tab title="Field References">
+      ```bash
+      # Use specific fields
+      git log --oneline | fzf --preview='git show {1}'
+      
+      # Multiple fields
+      git grep -n . | fzf --delimiter=: --preview='bat --color=always {1} --highlight-line {2}'
+      ```
+    </Tab>
+  </Tabs>
+  
+  <Warning>
+    Don't add `--preview` to `$FZF_DEFAULT_OPTS` - fzf is a general-purpose text filter, not just a file finder.
+  </Warning>
+</ParamField>
+
+## Preview Window Layout
+
+<ParamField path="--preview-window" type="string" default="right:50%">
+  Configure preview window layout, position, and behavior
+  
+  Format: `[POSITION][,SIZE][,OPTIONS]`
+  
+  <Tabs>
+    <Tab title="Position">
+      ```bash
+      # Right side, 50% width (default)
+      fzf --preview='cat {}' --preview-window=right:50%
+      
+      # Top, 40% height
+      fzf --preview='cat {}' --preview-window=top:40%
+      
+      # Bottom
+      fzf --preview='cat {}' --preview-window=bottom:50%
+      
+      # Left side
+      fzf --preview='cat {}' --preview-window=left:40%
+      ```
+    </Tab>
+    
+    <Tab title="Size">
+      ```bash
+      # Percentage
+      fzf --preview='cat {}' --preview-window=right:60%
+      
+      # Absolute lines/columns
+      fzf --preview='cat {}' --preview-window=up:20
+      
+      # Responsive size with threshold
+      # Format: <SIZE_THRESHOLD(ALTERNATIVE_LAYOUT)
+      fzf --preview='cat {}' --preview-window='right:50%,<80(up:50%)'
+      ```
+    </Tab>
+    
+    <Tab title="Scrolling">
+      ```bash
+      # Start at specific line (+SCROLL)
+      fzf --preview='cat {}' --preview-window='+{2}'
+      
+      # Scroll with offset (+SCROLL[OFFSETS])
+      fzf --preview='cat {}' --preview-window='+{2}-5'
+      
+      # Scroll with denominator (+SCROLL[OFFSETS][/DENOM])
+      fzf --preview='cat {}' --preview-window='+{2}/2'
+      
+      # Example: center the line
+      git grep -n . | fzf --delimiter=: --preview='bat {1} --highlight-line {2}' --preview-window='+{2}/2'
+      ```
+    </Tab>
+  </Tabs>
+</ParamField>
+
+## Preview Options
+
+<ParamField path="--preview-window" type="string">
+  Available options (comma-separated):
+  
+  <Tabs>
+    <Tab title="Wrapping">
+      ```bash
+      # Enable line wrapping
+      fzf --preview='cat {}' --preview-window=wrap
+      
+      # Word wrapping
+      fzf --preview='cat {}' --preview-window=wrap-word
+      
+      # Disable wrapping
+      fzf --preview='cat {}' --preview-window=nowrap
+      ```
+    </Tab>
+    
+    <Tab title="Follow">
+      ```bash
+      # Auto-scroll to bottom (for logs)
+      tail -f /var/log/syslog | fzf --preview='echo {}' --preview-window=follow
+      
+      # Disable follow
+      fzf --preview='echo {}' --preview-window=nofollow
+      ```
+    </Tab>
+    
+    <Tab title="Cycling">
+      ```bash
+      # Enable cyclic scrolling
+      fzf --preview='cat {}' --preview-window=cycle
+      
+      # Disable cycling
+      fzf --preview='cat {}' --preview-window=nocycle
+      ```
+    </Tab>
+    
+    <Tab title="Visibility">
+      ```bash
+      # Start hidden
+      fzf --preview='cat {}' --preview-window=hidden
+      
+      # Start visible
+      fzf --preview='cat {}' --preview-window=nohidden
+      
+      # Toggle with keybinding
+      fzf --preview='cat {}' --preview-window=hidden --bind='ctrl-/:toggle-preview'
+      ```
+    </Tab>
+    
+    <Tab title="Info Line">
+      ```bash
+      # Show info line in preview
+      fzf --preview='cat {}' --preview-window=info
+      
+      # Hide info line
+      fzf --preview='cat {}' --preview-window=noinfo
+      ```
+    </Tab>
+  </Tabs>
+</ParamField>
+
+## Preview Borders
+
+<ParamField path="--preview-border" type="string">
+  Shorthand for setting preview window border style
+  
+  Available styles: `rounded`, `sharp`, `bold`, `block`, `thinblock`, `double`, `horizontal`, `vertical`, `top`, `bottom`, `left`, `right`, `line`, `none`
+  
+  ```bash
+  # Rounded border
+  fzf --preview='cat {}' --preview-border=rounded
+  
+  # Or use preview-window option
+  fzf --preview='cat {}' --preview-window=border-rounded
+  
+  # Left border only
+  fzf --preview='cat {}' --preview-window=right:50%:border-left
+  ```
+</ParamField>
+
+<ParamField path="--preview-label" type="string">
+  Label to print on the preview window border
+  
+  ```bash
+  fzf --preview='cat {}' --preview-border --preview-label=' Preview '
+  
+  # Dynamic label with bind
+  fzf --preview='cat {}' --bind 'focus:transform-preview-label:echo " Previewing: {} "'
+  ```
+</ParamField>
+
+<ParamField path="--preview-label-pos" type="string">
+  Position of the preview label (same format as `--border-label-pos`)
+  
+  ```bash
+  # Center (default)
+  fzf --preview='cat {}' --preview-label=' File ' --preview-label-pos=0
+  
+  # 10 columns from left
+  fzf --preview='cat {}' --preview-label=' File ' --preview-label-pos=10
+  ```
+</ParamField>
+
+## Preview Indicators
+
+<ParamField path="--preview-wrap-sign" type="string">
+  Indicator string for wrapped lines in preview window
+  
+  ```bash
+  fzf --preview='cat {}' --preview-window=wrap --preview-wrap-sign='↳ '
+  ```
+</ParamField>
+
+## Header Lines
+
+<ParamField path="--preview-window" type="string">
+  Use `~HEADER_LINES` to specify header lines in preview that shouldn't scroll
+  
+  ```bash
+  # First 3 lines are headers
+  ps aux | fzf --preview='echo {}' --preview-window='~3'
+  
+  # Combined with other options
+  ps aux | fzf --preview='echo {}' --preview-window='up:50%:~3:wrap'
+  ```
+</ParamField>
+
+## Default Behavior
+
+<ParamField path="--preview-window" type="string">
+  Use `default` option to reset to default settings
+  
+  ```bash
+  fzf --preview='cat {}' --preview-window=default
+  ```
+</ParamField>
+
+## Advanced Examples
+
+<CodeGroup>
+```bash File Preview with Line Numbers
+fzf --preview='bat --style=numbers --color=always --line-range :500 {}' \
+    --preview-window='right:50%:border-left'
+```
+
+```bash Git Log Preview
+git log --oneline | fzf \
+  --preview='git show --color=always {1}' \
+  --preview-window='right:60%:border-left:wrap'
+```
+
+```bash Grep Results with Highlighting
+rg --line-number --color=always . | fzf --ansi \
+  --delimiter=: \
+  --preview='bat --color=always {1} --highlight-line {2}' \
+  --preview-window='+{2}+3/2:border-left'
+```
+
+```bash Adaptive Preview Layout
+fzf --preview='cat {}' \
+  --preview-window='right:50%,<100(up:50%),<50(hidden)' \
+  --bind='ctrl-/:toggle-preview'
+```
+
+```bash Preview with Dynamic Headers
+ps aux | fzf --header-lines=1 \
+  --preview='echo {}' \
+  --preview-window='down:50%:~1:wrap'
+```
+</CodeGroup>
+
+## Image Preview
+
+fzf supports image preview using:
+- [Kitty graphics protocol](https://sw.kovidgoyal.net/kitty/graphics-protocol/)
+- [iTerm2 inline images protocol](https://iterm2.com/documentation-images.html)
+- [Sixel](https://en.wikipedia.org/wiki/Sixel)
+
+```bash
+# Using fzf-preview.sh script
+fzf --preview='fzf-preview.sh {}'
+
+# Custom image preview
+fzf --preview='chafa {} || cat {}' --preview-window=right:50%
+```
+
+## Toggle and Control
+
+<CodeGroup>
+```bash Toggle Preview Visibility
+fzf --preview='cat {}' \
+  --bind='ctrl-/:toggle-preview'
+```
+
+```bash Change Preview Window
+fzf --preview='cat {}' \
+  --bind='ctrl-/:change-preview-window(down|hidden|)'
+```
+
+```bash Scroll Preview
+fzf --preview='cat {}' \
+  --bind='ctrl-u:preview-up' \
+  --bind='ctrl-d:preview-down' \
+  --bind='ctrl-b:preview-page-up' \
+  --bind='ctrl-f:preview-page-down'
+```
+
+```bash Dynamic Preview Command
+fzf --bind='ctrl-t:change-preview(tree -C {})' \
+    --bind='ctrl-f:change-preview(cat {})' \
+    --preview='cat {}'
+```
+</CodeGroup>
+
+<Tip>
+  Combine preview window with [key bindings](/reference/keybindings) for powerful interactive exploration.
+</Tip>

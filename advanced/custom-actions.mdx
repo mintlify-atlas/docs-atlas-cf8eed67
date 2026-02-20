@@ -1,0 +1,229 @@
+---
+title: Custom Actions and Key Bindings
+description: Execute external programs and custom actions with execute, execute-silent, and become actions
+---
+
+fzf provides powerful actions that allow you to execute external programs and create sophisticated interactive workflows without leaving fzf.
+
+## Execute Actions
+
+### execute
+
+The `execute` action runs an external command and returns to fzf when complete:
+
+```bash
+# Press F1 to open the file with less without leaving fzf
+fzf --bind 'f1:execute(less -f {})'
+```
+
+<Note>
+`{}` is replaced with the single-quoted string of the focused line.
+</Note>
+
+### execute-silent
+
+The `execute-silent` action runs a command without opening a terminal:
+
+```bash
+# Press CTRL-Y to copy the line to clipboard and abort fzf
+fzf --bind 'ctrl-y:execute-silent(echo {} | pbcopy)+abort'
+```
+
+<Tip>
+Use `execute-silent` for background tasks like copying to clipboard, sending notifications, or logging.
+</Tip>
+
+## Multiple Actions
+
+You can chain multiple actions with `+`:
+
+```bash
+# Copy to clipboard AND abort
+fzf --bind 'ctrl-y:execute-silent(echo {} | pbcopy)+abort'
+
+# Execute and reload
+fzf --bind 'ctrl-d:execute(rm {})+reload(ls)'
+```
+
+## Real-World Examples
+
+### Process Management
+
+<CodeGroup>
+```bash Kill process
+# Select and kill processes
+(date; ps -ef) |
+  fzf --bind='ctrl-r:reload(date; ps -ef)' \
+      --header=$'Press CTRL-R to reload\n\n' --header-lines=2 \
+      --preview='echo {}' --preview-window=down,3,wrap \
+      --layout=reverse --height=80% | awk '{print $2}' | xargs kill -9
+```
+
+```bash Interactive ps viewer
+# View process details with custom actions
+ps -ef | fzf \
+  --bind 'ctrl-r:reload(ps -ef)' \
+  --bind 'f1:execute(ps -p {2} -o pid,ppid,user,%cpu,%mem,etime,cmd)' \
+  --header 'CTRL-R: reload | F1: details'
+```
+</CodeGroup>
+
+### File Operations
+
+```bash
+# File browser with multiple actions
+find * -type f | fzf \
+  --bind 'f1:execute(less -f {})' \
+  --bind 'ctrl-y:execute-silent(echo {} | pbcopy)' \
+  --bind 'ctrl-e:execute($EDITOR {})' \
+  --bind 'ctrl-d:execute(rm -i {})+reload(find * -type f)' \
+  --preview 'bat --color=always {}' \
+  --header 'F1:view | ^Y:copy | ^E:edit | ^D:delete'
+```
+
+### Git Operations
+
+Interactive git file selector:
+
+```bash
+# Stage files with custom actions
+git status --short | fzf -m \
+  --bind 'ctrl-s:execute(git add {2})' \
+  --bind 'ctrl-u:execute(git reset HEAD {2})' \
+  --bind 'ctrl-d:execute(git diff {2} | less)' \
+  --preview 'git diff --color=always {2}' \
+  --header 'CTRL-S:stage | CTRL-U:unstage | CTRL-D:diff'
+```
+
+## The become Action
+
+<Warning>
+`become(...)` is different from `execute(...)` — it turns fzf into a new process rather than returning to fzf.
+</Warning>
+
+### Basic Usage
+
+```bash
+# fzf becomes vim when you press enter
+fzf --bind 'enter:become(vim {})'
+```
+
+### Advantages over Command Substitution
+
+Compare these approaches:
+
+<CodeGroup>
+```bash Command substitution
+# Issues:
+# - Opens empty file on CTRL-C
+# - Opens empty file on empty result
+# - Breaks with whitespace in filenames
+vim "$(fzf)"
+```
+
+```bash Using become
+# Better:
+# - No empty file on CTRL-C
+# - No empty file on empty result
+# - Handles whitespace correctly
+fzf --bind 'enter:become(vim {})'
+```
+
+```bash Multiple selections
+# Handles multiple files with spaces
+fzf --multi --bind 'enter:become(vim {+})'
+```
+</CodeGroup>
+
+### Multiple Bindings
+
+Set up different actions for different keys:
+
+```bash
+# Open with different editors
+fzf --bind 'enter:become(vim {})' \
+    --bind 'ctrl-e:become(emacs {})' \
+    --bind 'ctrl-c:become(code {})'
+```
+
+### With Field Expressions
+
+<Steps>
+  <Step title="Extract fields from structured output">
+    ```bash
+    # Open file at specific line from git grep
+    git grep --line-number . |
+      fzf --delimiter : --nth 3.. \
+          --bind 'enter:become(vim {1} +{2})'
+    ```
+  </Step>
+  
+  <Step title="Open Ripgrep results">
+    ```bash
+    # Ripgrep with file:line:column format
+    rg --column --line-number --no-heading --smart-case "pattern" |
+      fzf --delimiter : \
+          --preview 'bat --color=always {1} --highlight-line {2}' \
+          --bind 'enter:become(vim {1} +{2})'
+    ```
+  </Step>
+</Steps>
+
+## Kubernetes Pod Management
+
+Complex example with multiple actions:
+
+```bash
+pods() {
+  command='kubectl get pods --all-namespaces' fzf \
+    --info=inline --layout=reverse --header-lines=1 \
+    --prompt "$(kubectl config current-context | sed 's/-context$//')> " \
+    --header $'╱ Enter (kubectl exec) ╱ CTRL-O (open log in editor) ╱ CTRL-R (reload) ╱\n\n' \
+    --bind 'start,ctrl-r:reload:$command' \
+    --bind 'ctrl-/:change-preview-window(80%,border-bottom|hidden|)' \
+    --bind 'enter:execute:kubectl exec -it --namespace {1} {2} -- bash' \
+    --bind 'ctrl-o:execute:${EDITOR:-vim} <(kubectl logs --all-containers --namespace {1} {2})' \
+    --preview-window up:follow \
+    --preview 'kubectl logs --follow --all-containers --tail=10000 --namespace {1} {2}' "$@"
+}
+```
+
+<Accordion title="How it works">
+- `enter`: Opens an interactive shell in the selected pod
+- `ctrl-o`: Opens pod logs in your editor using process substitution
+- `ctrl-r`: Reloads the pod list
+- `ctrl-/`: Toggles preview window visibility
+- Preview window follows logs in real-time with `up:follow`
+</Accordion>
+
+## Log Tailing
+
+Dynamic log viewer with clearing:
+
+```bash
+# Preview window automatically scrolls to bottom
+# \033[2J is ANSI escape for clearing the screen
+fzf --preview-window follow --preview 'for i in $(seq 100000); do
+  echo "$i"
+  sleep 0.01
+  (( i % 300 == 0 )) && printf "\033[2J"
+done'
+```
+
+<Note>
+When fzf reads the `\033[2J` code, it clears the previous preview contents.
+</Note>
+
+## Action Reference
+
+| Action | Description | Returns to fzf? |
+|--------|-------------|----------------|
+| `execute(CMD)` | Runs command, shows output | Yes |
+| `execute-silent(CMD)` | Runs command in background | Yes |
+| `become(CMD)` | Replaces fzf with new process | No |
+| `reload(CMD)` | Updates candidate list | Yes |
+| `abort` | Exits fzf immediately | No |
+
+<Tip>
+Chain actions with `+` to create complex workflows: `execute-silent(notify-send {})+reload(refresh-list)+clear-query`
+</Tip>

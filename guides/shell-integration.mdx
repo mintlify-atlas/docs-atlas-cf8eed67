@@ -1,0 +1,270 @@
+---
+title: Shell Integration
+description: Set up fzf shell integration for Bash, Zsh, and Fish with key bindings and fuzzy completion
+---
+
+Shell integration provides key bindings (`CTRL-T`, `CTRL-R`, `ALT-C`) and fuzzy completion for your shell. This is the recommended setup for interactive shell usage.
+
+## Quick Setup
+
+Add one line to your shell configuration file:
+
+<CodeGroup>
+```bash Bash (~/.bashrc)
+# Set up fzf key bindings and fuzzy completion
+eval "$(fzf --bash)"
+```
+
+```zsh Zsh (~/.zshrc)
+# Set up fzf key bindings and fuzzy completion
+source <(fzf --zsh)
+```
+
+```fish Fish (~/.config/fish/config.fish)
+# Set up fzf key bindings
+fzf --fish | source
+```
+</CodeGroup>
+
+<Note>
+The `--bash`, `--zsh`, and `--fish` options are available in fzf 0.48.0 or later.
+</Note>
+
+## What You Get
+
+Shell integration provides:
+
+<Tabs>
+  <Tab title="Key Bindings">
+    - **CTRL-T**: Paste selected files and directories onto the command-line
+    - **CTRL-R**: Paste selected command from history onto the command-line
+    - **ALT-C**: cd into the selected directory
+    
+    See [Key Bindings](/guides/key-bindings) for details.
+  </Tab>
+  
+  <Tab title="Fuzzy Completion">
+    Trigger with `**<TAB>`:
+    - Files and directories: `vim **<TAB>`
+    - Process IDs: `kill -9 **<TAB>`
+    - Host names: `ssh **<TAB>`
+    - Environment variables: `export **<TAB>`
+    
+    See [Fuzzy Completion](/guides/fuzzy-completion) for details.
+  </Tab>
+</Tabs>
+
+## Older Versions or Manual Setup
+
+If you have an older version of fzf (before 0.48.0), or want finer control, source individual script files from the `/shell` directory.
+
+<Warning>
+The location of shell integration files varies by installation method. Use your package manager's documentation to find them.
+
+For example:
+```bash
+apt show fzf  # On Debian/Ubuntu
+```
+</Warning>
+
+### Finding Shell Script Locations
+
+<Accordion title="Common Locations by Installation Method">
+  - **Homebrew (macOS/Linux)**: `/opt/homebrew/opt/fzf/shell/` or `/usr/local/opt/fzf/shell/`
+  - **Git installation**: `~/.fzf/shell/`
+  - **Linux packages**: `/usr/share/fzf/` or `/usr/share/doc/fzf/examples/`
+  - **Build from source**: Check the `shell/` directory in your build location
+</Accordion>
+
+### Manual Setup Examples
+
+<CodeGroup>
+```bash Bash (Manual)
+# Source key bindings
+source /path/to/fzf/shell/key-bindings.bash
+
+# Source completion
+source /path/to/fzf/shell/completion.bash
+```
+
+```zsh Zsh (Manual)
+# Source key bindings
+source /path/to/fzf/shell/key-bindings.zsh
+
+# Source completion
+source /path/to/fzf/shell/completion.zsh
+```
+
+```fish Fish (Manual)
+# Source key bindings (creates functions in fish)
+source /path/to/fzf/shell/key-bindings.fish
+
+# Fish completion is automatically handled
+```
+</CodeGroup>
+
+## Disabling Specific Key Bindings
+
+You can disable individual key bindings by setting the corresponding `*_COMMAND` variable to empty:
+
+<CodeGroup>
+```bash Bash
+# Disable CTRL-R and ALT-C, keep CTRL-T
+FZF_CTRL_R_COMMAND= FZF_ALT_C_COMMAND= eval "$(fzf --bash)"
+```
+
+```zsh Zsh
+# Disable CTRL-T, keep CTRL-R and ALT-C
+FZF_CTRL_T_COMMAND= source <(fzf --zsh)
+```
+
+```fish Fish
+# Disable ALT-C
+fzf --fish | FZF_ALT_C_COMMAND= source
+```
+</CodeGroup>
+
+<Warning>
+Setting the variables **after** sourcing the script will have no effect. They must be set before or while sourcing.
+</Warning>
+
+## Customizing Key Bindings
+
+Each key binding can be customized using environment variables:
+
+### CTRL-T Customization
+
+```bash
+# Custom command to generate file list
+export FZF_CTRL_T_COMMAND='fd --type f --strip-cwd-prefix'
+
+# Additional fzf options
+export FZF_CTRL_T_OPTS="
+  --walker-skip .git,node_modules,target
+  --preview 'bat -n --color=always {}'
+  --bind 'ctrl-/:change-preview-window(down|hidden|)'"
+```
+
+### CTRL-R Customization
+
+```bash
+# Additional fzf options for history search
+export FZF_CTRL_R_OPTS="
+  --bind 'ctrl-y:execute-silent(echo -n {2..} | pbcopy)+abort'
+  --color header:italic
+  --header 'Press CTRL-Y to copy command into clipboard'"
+```
+
+### ALT-C Customization
+
+```bash
+# Custom command to generate directory list
+export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
+
+# Additional fzf options
+export FZF_ALT_C_OPTS="
+  --walker-skip .git,node_modules,target
+  --preview 'tree -C {}'"
+```
+
+## Display Modes
+
+Configure display modes globally or per-binding:
+
+```bash
+# Global configuration
+export FZF_DEFAULT_OPTS='--height 40% --tmux bottom,40% --layout reverse --border top'
+
+# Per-binding (overrides global)
+export FZF_CTRL_T_OPTS='--preview "bat --color=always {}"'
+export FZF_CTRL_R_OPTS='--tmux bottom,60% --height 60% --border top'
+export FZF_ALT_C_OPTS='--preview "tree -C {}"'
+```
+
+## Complete Configuration Example
+
+Here's a complete shell integration setup with customizations:
+
+```bash ~/.bashrc or ~/.zshrc
+# Default fzf options
+export FZF_DEFAULT_OPTS="
+  --height 40%
+  --layout reverse
+  --border
+  --inline-info
+  --color 'border:#6699cc'"
+
+# Use fd for better file traversal
+export FZF_DEFAULT_COMMAND='fd --type f --strip-cwd-prefix --hidden --follow --exclude .git'
+
+# CTRL-T: File selection with bat preview
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+export FZF_CTRL_T_OPTS="
+  --preview 'bat -n --color=always --line-range :500 {}'
+  --bind 'ctrl-/:change-preview-window(down|hidden|)'
+  --bind 'ctrl-y:execute-silent(echo -n {} | pbcopy)+abort'
+  --header 'CTRL-/: toggle preview | CTRL-Y: copy path'"
+
+# CTRL-R: Command history with preview
+export FZF_CTRL_R_OPTS="
+  --preview 'echo {}' --preview-window up:3:hidden:wrap
+  --bind 'ctrl-/:toggle-preview'
+  --bind 'ctrl-y:execute-silent(echo -n {2..} | pbcopy)+abort'
+  --color header:italic
+  --header 'Press CTRL-Y to copy command into clipboard'"
+
+# ALT-C: Directory selection with tree preview  
+export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
+export FZF_ALT_C_OPTS="
+  --preview 'tree -C {} | head -200'
+  --bind 'ctrl-/:change-preview-window(down|hidden|)'"
+
+# Fuzzy completion trigger
+export FZF_COMPLETION_TRIGGER='**'
+
+# Fuzzy completion options
+export FZF_COMPLETION_OPTS='--border --info=inline'
+
+# Set up fzf key bindings and fuzzy completion
+eval "$(fzf --bash)"  # or: source <(fzf --zsh)
+```
+
+## Troubleshooting
+
+<Accordion title="Key bindings not working">
+  Make sure you've:
+  1. Added the integration line to your shell config file
+  2. Reloaded your shell or opened a new terminal
+  3. Not accidentally disabled the binding with empty `*_COMMAND` variables
+</Accordion>
+
+<Accordion title="Fuzzy completion not working">
+  - Bash and Zsh use `**<TAB>` as the trigger
+  - Fish uses `<SHIFT-TAB>` (not `TAB`)
+  - Make sure you're typing `**` before pressing TAB
+</Accordion>
+
+<Accordion title="Custom commands not being used">
+  Environment variables must be set **before** sourcing the shell integration.
+</Accordion>
+
+<Accordion title="Can't find shell script files">
+  Use your package manager to find the installation location:
+  ```bash
+  # Debian/Ubuntu
+  apt show fzf
+  
+  # macOS Homebrew
+  brew info fzf
+  
+  # Check common locations
+  ls /usr/share/fzf/
+  ls /usr/share/doc/fzf/examples/
+  ```
+</Accordion>
+
+## Next Steps
+
+- Learn about [Key Bindings](/guides/key-bindings) (CTRL-T, CTRL-R, ALT-C)
+- Explore [Fuzzy Completion](/guides/fuzzy-completion) for files, PIDs, and more
+- Configure [Environment Variables](/guides/configuration) to customize behavior

@@ -1,0 +1,342 @@
+---
+title: Fish Integration
+description: Shell integration, key bindings, and completion for Fish shell
+---
+
+fzf provides comprehensive integration with Fish shell including key bindings and fuzzy completion.
+
+## Setup
+
+<ParamField path="fzf --fish" type="command">
+  Print script to set up Fish shell integration
+  
+  ```fish
+  # Add to ~/.config/fish/config.fish
+  fzf --fish | source
+  ```
+  
+  <Note>
+    Available in fzf 0.48.0 or later. Requires Fish 3.1b1 or newer.
+  </Note>
+</ParamField>
+
+### Manual Setup (older versions)
+
+```fish
+# Add to ~/.config/fish/config.fish
+source /usr/share/fzf/key-bindings.fish
+```
+
+<Tip>
+  Use your package manager's documentation to find the installation path.
+</Tip>
+
+## Key Bindings
+
+fzf provides three default key bindings for Fish:
+
+### CTRL-T: File and Directory Search
+
+<ParamField path="CTRL-T" type="keybinding">
+  Paste the selected files and directories onto the command-line
+  
+  ```fish
+  # Press CTRL-T to search files
+  vim <CTRL-T>
+  
+  # Select multiple files with TAB
+  rm <CTRL-T>
+  ```
+  
+  <Tip>
+    Unlike Bash/Zsh, Fish's CTRL-T uses the last token on the command-line as the root directory:
+    
+    ```fish
+    ls /var/<CTRL-T>  # Searches under /var/
+    ```
+  </Tip>
+  
+  Configuration:
+  ```fish
+  # Custom command (default: uses --walker)
+  set -x FZF_CTRL_T_COMMAND 'fd --type f --hidden --follow'
+  
+  # Additional fzf options
+  set -x FZF_CTRL_T_OPTS "
+    --walker-skip .git,node_modules,target
+    --preview 'bat -n --color=always {}'
+    --bind 'ctrl-/:change-preview-window(down|hidden|)'"
+  
+  # When using custom command, use $dir variable
+  set -x FZF_CTRL_T_COMMAND "command find -L \$dir -type f 2> /dev/null | sed '1d; s#^\./##'"
+  ```
+</ParamField>
+
+### CTRL-R: Command History Search
+
+<ParamField path="CTRL-R" type="keybinding">
+  Paste the selected command from history onto the command-line
+  
+  ```fish
+  # Press CTRL-R to search history
+  <CTRL-R>
+  ```
+  
+  Features:
+  - Press `CTRL-R` again to toggle sorting by relevance
+  - Press `ALT-R` to toggle "raw" mode (see surrounding items)
+  - Press `CTRL-/` or `ALT-/` to toggle line wrapping
+  - Press `SHIFT-DELETE` to delete history entries
+  - Press `ALT-ENTER` to edit command with `fish_indent`
+  - Multi-line commands are fully supported
+  - Syntax highlighting on Fish 4.3.3+
+  - Dynamic preview with fish_indent
+  
+  Configuration:
+  ```fish
+  # Additional fzf options
+  set -x FZF_CTRL_R_OPTS "
+    --bind 'ctrl-y:execute-silent(echo -n {2..} | pbcopy)+abort'
+    --color header:italic
+    --header 'Press CTRL-Y to copy command into clipboard'"
+  ```
+  
+  <Warning>
+    Custom override via `FZF_CTRL_R_COMMAND` is not yet supported.
+  </Warning>
+</ParamField>
+
+### ALT-C: Directory Navigation
+
+<ParamField path="ALT-C" type="keybinding">
+  cd into the selected directory
+  
+  ```fish
+  # Press ALT-C (or ESC+C) to search directories
+  <ALT-C>
+  ```
+  
+  Configuration:
+  ```fish
+  # Custom command (default: uses --walker)
+  set -x FZF_ALT_C_COMMAND 'fd --type d --hidden --follow'
+  
+  # Additional fzf options
+  set -x FZF_ALT_C_OPTS "
+    --walker-skip .git,node_modules,target
+    --preview 'tree -C {}'"
+  ```
+</ParamField>
+
+## Disabling Key Bindings
+
+You can disable specific key bindings by setting the corresponding `*_COMMAND` variable to an empty string:
+
+```fish
+# Disable CTRL-R and ALT-C
+set -x FZF_CTRL_R_COMMAND ''
+set -x FZF_ALT_C_COMMAND ''
+fzf --fish | source
+```
+
+<Note>
+  For Fish, you must set the variables before sourcing the script.
+</Note>
+
+## Fuzzy Completion
+
+Fish's fuzzy completion differs from Bash/Zsh:
+
+<Warning>
+  Fish completion has significant differences:
+  - Uses `SHIFT-TAB` instead of `**` trigger
+  - `TAB` preserves Fish's native completion
+  - Relies on Fish's native completion system
+  - Does not support recursive file system traversal (use CTRL-T for that)
+</Warning>
+
+### Basic Usage
+
+```fish
+# Fuzzy complete with SHIFT-TAB
+vim file<SHIFT-TAB>
+cd dir<SHIFT-TAB>
+ssh host<SHIFT-TAB>
+
+# Environment variables
+set <SHIFT-TAB>
+```
+
+### Configuration
+
+<ParamField path="FZF_COMPLETION_OPTS" type="string">
+  Options passed to fzf for completion (only supported configuration variable)
+  
+  ```fish
+  set -x FZF_COMPLETION_OPTS '--border --info=inline'
+  ```
+</ParamField>
+
+## Custom Fuzzy Completion
+
+Define custom completion for your own commands:
+
+<ParamField path="_fzf_complete_COMMAND" type="function">
+  Custom fuzzy completion function
+  
+  ```fish
+  function _fzf_complete_foo
+    function _fzf_complete_foo_post
+      awk '{print $NF}'
+    end
+    _fzf_complete --multi --reverse --header-lines=3 -- $argv < (ls -al | psub)
+  
+    functions -e _fzf_complete_foo_post
+  end
+  ```
+  
+  <Note>
+    Remember to clean up the post-processing function with `functions -e`.
+  </Note>
+</ParamField>
+
+### Context-Aware Completion
+
+```fish
+function _fzf_complete_git
+  switch $argv[2]
+    case checkout switch
+      _fzf_complete --reverse --no-preview -- $argv < (git branch --all --format='%(refname:short)' | psub)
+
+    case add
+      function _fzf_complete_git_post
+        awk '{print $NF}'
+      end
+      _fzf_complete --multi --reverse -- $argv < (git status --short | psub)
+
+    case show log diff
+      function _fzf_complete_git_post
+        awk '{print $1}'
+      end
+      _fzf_complete --reverse --no-sort --preview='git show --color=always {1}' -- $argv < (git log --oneline | psub)
+
+    case ''
+      __fzf_complete_native "$argv[1] " --query=(commandline -t | string escape)
+
+    case '*'
+      set -l -- current_token (commandline -t)
+      __fzf_complete_native "$argv $current_token" --query=(string escape -- $current_token) --multi
+  end
+
+  functions -e _fzf_complete_git_post
+end
+```
+
+## Fish-Specific Features
+
+### Command Line Token Handling
+
+Fish provides better token parsing:
+
+```fish
+# Use last token as root for CTRL-T
+ls /var/<CTRL-T>  # Searches under /var/
+cat ~/doc<CTRL-T>  # Searches under ~/
+```
+
+### History Features
+
+- Merge history from other sessions
+- Delete entries with SHIFT-DELETE
+- Edit commands with ALT-ENTER and fish_indent
+- Syntax highlighting in preview (Fish 4.3.3+)
+- Private mode support
+
+### Preview Enhancements
+
+```fish
+# Advanced preview with dynamic visibility
+fzf --preview='cat {}' \
+  --bind='focus,resize:bg-transform:
+    if test "$FZF_COLUMNS" -gt 100
+      echo show-preview
+    else
+      echo hide-preview
+    end'
+```
+
+## Complete Example Configuration
+
+```fish
+# ~/.config/fish/config.fish
+
+# Set up fzf key bindings
+fzf --fish | source
+
+# Customization
+set -x FZF_COMPLETION_OPTS '--border --info=inline'
+
+# CTRL-T customization
+set -x FZF_CTRL_T_COMMAND 'fd --type f --hidden --follow --exclude .git'
+set -x FZF_CTRL_T_OPTS "
+  --walker-skip .git,node_modules,target
+  --preview 'bat -n --color=always {}'
+  --bind 'ctrl-/:change-preview-window(down|hidden|)'"
+
+# CTRL-R customization
+set -x FZF_CTRL_R_OPTS "
+  --bind 'ctrl-y:execute-silent(echo -n {2..} | pbcopy)+abort'
+  --color header:italic
+  --header 'Press CTRL-Y to copy command into clipboard'"
+
+# ALT-C customization
+set -x FZF_ALT_C_COMMAND 'fd --type d --hidden --follow --exclude .git'
+set -x FZF_ALT_C_OPTS "
+  --walker-skip .git,node_modules,target
+  --preview 'tree -C {}'"
+
+# Custom completion for git
+function _fzf_complete_git
+  switch $argv[2]
+    case checkout switch
+      _fzf_complete --reverse --no-preview -- $argv < (git branch --all --format='%(refname:short)' | psub)
+
+    case add
+      function _fzf_complete_git_post
+        awk '{print $NF}'
+      end
+      _fzf_complete --multi --reverse -- $argv < (git status --short | psub)
+
+    case show log diff
+      function _fzf_complete_git_post
+        awk '{print $1}'
+      end
+      _fzf_complete --reverse --no-sort --preview='git show --color=always {1}' -- $argv < (git log --oneline | psub)
+
+    case ''
+      __fzf_complete_native "$argv[1] " --query=(commandline -t | string escape)
+
+    case '*'
+      set -l -- current_token (commandline -t)
+      __fzf_complete_native "$argv $current_token" --query=(string escape -- $current_token) --multi
+  end
+
+  functions -e _fzf_complete_git_post
+end
+```
+
+## Version Requirements
+
+<Warning>
+  Fish integration requires Fish 3.1b1 or newer. Different features are available in different versions:
+  
+  - Fish 3.1+: Basic integration
+  - Fish 3.2+: Better token handling
+  - Fish 3.5+: Path normalization
+  - Fish 4.0+: Expanded tokens
+  - Fish 4.3.3+: Syntax highlighting in history
+</Warning>
+
+<Tip>
+  For more examples and troubleshooting, see the [fzf wiki](https://github.com/junegunn/fzf/wiki).
+</Tip>

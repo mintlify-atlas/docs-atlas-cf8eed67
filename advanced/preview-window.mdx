@@ -1,0 +1,292 @@
+---
+title: Preview Window
+description: Configure and customize the preview window with file content, images, and dynamic layouts
+---
+
+The preview window is one of fzf's most powerful features, allowing you to see additional context about the currently selected item.
+
+## Basic Usage
+
+When the `--preview` option is set, fzf automatically starts an external process with the current line as the argument:
+
+```bash
+# {} is replaced with the single-quoted string of the focused line
+fzf --preview 'cat {}'
+```
+
+<Note>
+Your `$SHELL` is used to execute the command with `$SHELL -c COMMAND`.
+</Note>
+
+## Syntax Highlighting
+
+Preview window supports ANSI colors, so you can use syntax highlighters like [bat](https://github.com/sharkdp/bat):
+
+```bash
+# Syntax-highlighted file preview
+fzf --preview 'bat --color=always {}' --preview-window '~3'
+```
+
+<Tip>
+The `~3` makes the top three lines fixed header so they are always visible regardless of scroll offset.
+</Tip>
+
+## Window Configuration
+
+Customize size, position, and border with `--preview-window`:
+
+### Position and Size
+
+```bash
+# Position: up, down, left, right
+fzf --preview 'cat {}' --preview-window up
+
+# Size: percentage or lines
+fzf --preview 'cat {}' --preview-window up,60%
+fzf --preview 'cat {}' --preview-window left,40%
+
+# Multiple options separated by comma
+fzf --preview 'bat --color=always {}' --preview-window 'up,60%,border-bottom'
+```
+
+### Border Styles
+
+<CodeGroup>
+```bash Horizontal border
+fzf --preview 'file {}' --preview-window up,1,border-horizontal
+```
+
+```bash Bottom border only
+fzf --preview 'bat --color=always {}' --preview-window up,60%,border-bottom
+```
+
+```bash Custom colors
+fzf --height 40% --layout reverse --info inline --border \
+    --preview 'file {}' --preview-window up,1,border-horizontal \
+    --color 'fg:#bbccdd,preview-bg:#223344,border:#778899'
+```
+</CodeGroup>
+
+## Scroll Offset
+
+Control where the preview starts scrolling:
+
+### Basic Offset
+
+```bash
+# Scroll to line 10
+fzf --preview 'cat {}' --preview-window '+10'
+
+# Use field as offset (e.g., line number from git grep)
+git grep --line-number . | fzf --delimiter : \
+  --preview 'bat --color=always {1} --highlight-line {2}' \
+  --preview-window '+{2}'
+```
+
+### Advanced Offset Calculation
+
+From the Ripgrep integration example:
+
+```bash
+rg --color=always --line-number --no-heading --smart-case "pattern" |
+  fzf --ansi \
+      --delimiter : \
+      --preview 'bat --color=always {1} --highlight-line {2}' \
+      --preview-window 'up,60%,border-bottom,+{2}+3/3,~3'
+```
+
+<Accordion title="Understanding the offset: +{2}+3/3,~3">
+<Steps>
+  <Step title="Base offset: +{2}">
+    Extract line number from the second field (after first `:`)
+  </Step>
+  
+  <Step title="Compensation: +3">
+    Add 3 lines to compensate for bat's header:
+    ```
+    ───────┬──────────────────────────────────────
+           │ File: example.md
+    ───────┼──────────────────────────────────────
+       1   │ First line
+    ```
+  </Step>
+  
+  <Step title="Position: /3">
+    Show matching line at 1/3 position in window (not at top)
+  </Step>
+  
+  <Step title="Fixed header: ~3">
+    Keep top 3 lines visible regardless of scroll
+  </Step>
+</Steps>
+</Accordion>
+
+## Hiding and Toggling
+
+Create dynamic preview visibility:
+
+```bash
+# Toggle between different preview window states
+fzf --preview 'bat --color=always {}' \
+    --bind 'ctrl-/:change-preview-window(down|hidden|)'
+```
+
+<CodeGroup>
+```bash Three states
+# Cycle: 50% | hidden | default
+fzf --preview 'bat {}' \
+    --bind 'ctrl-/:change-preview-window(50%|hidden|)'
+```
+
+```bash With border changes
+# Kubernetes pod example
+fzf --preview 'kubectl logs {2}' \
+    --bind 'ctrl-/:change-preview-window(80%,border-bottom|hidden|)'
+```
+</CodeGroup>
+
+## Image Preview
+
+fzf can display images using one of these protocols:
+
+<Steps>
+  <Step title="Kitty graphics protocol">
+    Works in [Kitty terminal](https://sw.kovidgoyal.net/kitty/graphics-protocol/)
+  </Step>
+  
+  <Step title="iTerm2 inline images">
+    Works in [iTerm2](https://iterm2.com/documentation-images.html)
+  </Step>
+  
+  <Step title="Sixel">
+    Works in terminals supporting [Sixel](https://en.wikipedia.org/wiki/Sixel)
+  </Step>
+</Steps>
+
+### Using fzf-preview.sh
+
+The bundled script handles different protocols automatically:
+
+```bash
+# Basic usage
+fzf --preview 'fzf-preview.sh {}'
+
+# With file paths
+find . -type f | fzf --preview 'fzf-preview.sh {}'
+```
+
+### How fzf-preview.sh Works
+
+<Accordion title="Preview script logic">
+```bash
+#!/usr/bin/env bash
+# Simplified version of fzf-preview.sh
+
+file=${1/#\~\//$HOME/}
+type=$(file --brief --dereference --mime -- "$file")
+
+if [[ ! $type =~ image/ ]]; then
+  # Use bat for text files
+  bat --style=numbers --color=always "$file"
+else
+  dim=${FZF_PREVIEW_COLUMNS}x${FZF_PREVIEW_LINES}
+  
+  # Try Kitty first
+  if [[ $KITTY_WINDOW_ID ]] && command -v kitten > /dev/null; then
+    kitten icat --place="$dim@0x0" "$file"
+  # Then Sixel via chafa
+  elif command -v chafa > /dev/null; then
+    chafa -s "$dim" "$file"
+  # Then iTerm2
+  elif command -v imgcat > /dev/null; then
+    imgcat -W "${dim%%x*}" -H "${dim##*x}" "$file"
+  else
+    file "$file"
+  fi
+fi
+```
+</Accordion>
+
+### Environment Variables
+
+fzf provides preview window dimensions:
+
+- `$FZF_PREVIEW_COLUMNS` - Width in characters
+- `$FZF_PREVIEW_LINES` - Height in lines
+- `$FZF_PREVIEW_TOP` - Top position (for offset calculation)
+
+```bash
+# Use dimensions in preview command
+fzf --preview 'echo "Window size: $FZF_PREVIEW_COLUMNS x $FZF_PREVIEW_LINES"'
+```
+
+## Log Tailing with Follow
+
+The `follow` flag makes the preview window auto-scroll like `tail -f`:
+
+```bash
+# Kubernetes pod logs
+kubectl get pods --all-namespaces | fzf \
+  --header-lines=1 \
+  --preview-window up:follow \
+  --preview 'kubectl logs --follow --tail=100 --namespace {1} {2}'
+```
+
+<Warning>
+Clear logs periodically with `\033[2J` ANSI escape code to prevent excessive memory usage.
+</Warning>
+
+### Demo Example
+
+```bash
+# Simulated log tailing with periodic clearing
+fzf --preview-window follow --preview 'for i in $(seq 100000); do
+  echo "$i"
+  sleep 0.01
+  (( i % 300 == 0 )) && printf "\033[2J"
+done'
+```
+
+## Complex Example
+
+Git file viewer with context:
+
+```bash
+git ls-files | fzf \
+  --preview 'bat --color=always {}' \
+  --bind 'focus:transform-preview-label:[[ -n {} ]] && printf " Previewing [%s] " {}' \
+  --bind 'focus:+transform-header:file --brief {} || echo "No file selected"' \
+  --preview-window 'up,60%,border-bottom,+{1}+3/3,~3' \
+  --color 'preview-border:#9999cc,preview-label:#ccccff'
+```
+
+<Tip>
+Combine `transform-preview-label` and `transform-header` to create dynamic, context-aware previews.
+</Tip>
+
+## Best Practices
+
+<Warning>
+fzf is a general-purpose text filter, not a file finder. **Do not add `--preview` to `$FZF_DEFAULT_OPTS`**:
+
+```bash
+# DON'T DO THIS!
+export FZF_DEFAULT_OPTS='--preview "bat {}"'
+
+# bat doesn't work with non-file input
+ps -ef | fzf  # Will fail
+seq 100 | fzf # Will fail
+```
+</Warning>
+
+<Tip>
+Instead, set preview options for specific use cases:
+
+```bash
+# Good: Set for file-specific bindings
+export FZF_CTRL_T_OPTS="--preview 'bat -n --color=always {}'"
+
+# Good: Use in specific commands
+find . -type f | fzf --preview 'bat {}'
+```
+</Tip>

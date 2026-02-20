@@ -1,0 +1,303 @@
+---
+title: Input/Output Options
+description: Manage input/output formats, data processing, and scripting with fzf
+---
+
+Control how fzf reads input, writes output, and interacts with other commands and scripts.
+
+## Input Formats
+
+<ParamField path="--read0" type="boolean">
+  Read input delimited by ASCII NUL characters (`\0`) instead of newlines
+  
+  ```bash
+  # Find files with spaces/newlines in names
+  find . -type f -print0 | fzf --read0
+  
+  # Works with xargs -0
+  locate -0 pattern | fzf --read0
+  ```
+  
+  <Tip>
+    Use `--read0` when dealing with filenames that may contain newlines or other special characters.
+  </Tip>
+</ParamField>
+
+<ParamField path="--ansi" type="boolean">
+  Enable processing of ANSI color codes in input
+  
+  ```bash
+  # Preserve git diff colors
+  git diff --color=always | fzf --ansi
+  
+  # Show colored ls output
+  ls --color=always | fzf --ansi
+  
+  # Syntax highlighted preview
+  fzf --ansi --preview='bat --color=always {}'
+  ```
+  
+  <Warning>
+    `--ansi` makes the initial scanning slower. Don't add it to `$FZF_DEFAULT_OPTS` unless you always need it.
+  </Warning>
+</ParamField>
+
+## Output Formats
+
+<ParamField path="--print0" type="boolean">
+  Print output delimited by ASCII NUL characters instead of newlines
+  
+  ```bash
+  # Safe file handling with xargs
+  fzf --read0 --print0 | xargs -0 rm
+  
+  # Multiple files with spaces
+  find . -print0 | fzf -m --read0 --print0 | xargs -0 ls -l
+  ```
+</ParamField>
+
+<ParamField path="--print-query" type="boolean">
+  Print query as the first line of output
+  
+  ```bash
+  # Capture both query and selection
+  result=$(fzf --print-query)
+  query=$(echo "$result" | head -1)
+  selection=$(echo "$result" | tail -1)
+  ```
+  
+  <Tip>
+    Useful when you want to use the query string even if no item was selected.
+  </Tip>
+</ParamField>
+
+## Scripting Options
+
+<ParamField path="-q, --query" type="string">
+  Start the finder with the given query string
+  
+  ```bash
+  # Pre-fill search with 'TODO'
+  fzf --query='TODO'
+  
+  # Use variable as initial query
+  fzf --query="$initial_search"
+  ```
+</ParamField>
+
+<ParamField path="-1, --select-1" type="boolean">
+  Automatically select the only match
+  
+  ```bash
+  # Auto-select if only one file matches
+  file=$(find . -name '*.md' | fzf -1 --query='README')
+  
+  # Combine with --query and --exit-0
+  fzf -1 -0 --query="$search"
+  ```
+</ParamField>
+
+<ParamField path="-0, --exit-0" type="boolean">
+  Exit immediately when there's no match
+  
+  ```bash
+  # Exit without selection if no matches
+  fzf -0 --query='nonexistent'
+  
+  # Combined with -1 for non-interactive selection
+  result=$(find . -type f | fzf -1 -0 --query="$pattern")
+  ```
+</ParamField>
+
+<ParamField path="-f, --filter" type="string">
+  Filter mode - print matches for the given query and exit (non-interactive)
+  
+  ```bash
+  # Get all items matching 'test'
+  find . -type f | fzf -f test
+  
+  # Use in scripts
+  matches=$(history | fzf -f 'git commit')
+  
+  # Combine with other commands
+  find . -type f | fzf -f '.go$' | xargs wc -l
+  ```
+  
+  <Note>
+    Filter mode is non-interactive and exits immediately after filtering.
+  </Note>
+</ParamField>
+
+<ParamField path="--expect" type="string">
+  Comma-separated list of keys that will cause fzf to exit and print the key name as the first line
+  
+  ```bash
+  # Different actions for different keys
+  result=$(fzf --expect=ctrl-v,ctrl-e)
+  key=$(echo "$result" | head -1)
+  file=$(echo "$result" | tail -1)
+  
+  case $key in
+    ctrl-v) vim "$file" ;;
+    ctrl-e) emacs "$file" ;;
+    *) cat "$file" ;;
+  esac
+  ```
+  
+  <Tip>
+    Use `--expect` when you need different actions based on which key was pressed.
+  </Tip>
+</ParamField>
+
+## Synchronization
+
+<ParamField path="--sync" type="boolean">
+  Synchronous search for multi-staged filtering
+  
+  ```bash
+  # Ensure first command completes before fzf starts
+  command1 | fzf --sync | command2
+  
+  # Multiple filtering stages
+  find . -type f | fzf --sync --bind 'ctrl-d:reload(find . -type d)'
+  ```
+  
+  <Note>
+    Without `--sync`, fzf starts processing items as they arrive. With `--sync`, it waits for the entire input.
+  </Note>
+</ParamField>
+
+## Directory Traversal
+
+These options are only used when `$FZF_DEFAULT_COMMAND` is not set:
+
+<ParamField path="--walker" type="string" default="file,follow,hidden">
+  Configure built-in file system walker
+  
+  Options:
+  - `file` - Include files
+  - `dir` - Include directories
+  - `follow` - Follow symbolic links
+  - `hidden` - Include hidden files
+  
+  ```bash
+  # Only files, follow symlinks, include hidden
+  fzf --walker=file,follow,hidden
+  
+  # Only directories, no hidden
+  fzf --walker=dir,follow
+  
+  # Everything including hidden
+  fzf --walker=file,dir,follow,hidden
+  ```
+</ParamField>
+
+<ParamField path="--walker-root" type="string" default=".">
+  List of directories to walk (space-separated)
+  
+  ```bash
+  # Start from multiple directories
+  fzf --walker-root="/usr/local /opt"
+  
+  # Start from home
+  fzf --walker-root="$HOME"
+  ```
+</ParamField>
+
+<ParamField path="--walker-skip" type="string" default=".git,node_modules">
+  Comma-separated list of directory names to skip
+  
+  ```bash
+  # Skip common directories
+  fzf --walker-skip='.git,node_modules,target,dist'
+  
+  # Skip nothing
+  fzf --walker-skip=''
+  ```
+</ParamField>
+
+## Advanced Scripting
+
+<ParamField path="--listen" type="string">
+  Start HTTP server to receive actions via TCP or Unix socket
+  
+  <Tabs>
+    <Tab title="TCP Server">
+      ```bash
+      # Listen on port 6266 (localhost only)
+      fzf --listen
+      
+      # Listen on specific port
+      fzf --listen=7777
+      
+      # Listen on specific address and port
+      fzf --listen=0.0.0.0:7777
+      
+      # Send actions
+      curl -XPOST localhost:6266 -d 'reload(find . -type f)'
+      ```
+    </Tab>
+    
+    <Tab title="Unix Socket">
+      ```bash
+      # Use Unix domain socket (path must end with .sock)
+      fzf --listen=/tmp/fzf.sock
+      
+      # Send actions
+      curl --unix-socket /tmp/fzf.sock -XPOST http://localhost -d 'reload(find . -type f)'
+      ```
+    </Tab>
+  </Tabs>
+  
+  <Warning>
+    By default, `--listen` only allows actions that don't execute arbitrary commands. Use `--listen-unsafe` to allow all actions.
+  </Warning>
+</ParamField>
+
+<ParamField path="--with-shell" type="string">
+  Shell command and flags to start child processes with
+  
+  ```bash
+  # Use bash with specific options
+  fzf --with-shell='bash -c'
+  
+  # Use zsh
+  fzf --with-shell='zsh -c'
+  ```
+</ParamField>
+
+## Examples
+
+<CodeGroup>
+```bash Safe File Operations
+# Handle files with special characters
+find . -type f -print0 | \
+  fzf -m --read0 --print0 | \
+  xargs -0 -o vim
+```
+
+```bash Colored Output
+# Preserve colors in preview
+fzf --ansi \
+  --preview='bat --color=always --style=numbers {}' \
+  --bind='ctrl-/:toggle-preview'
+```
+
+```bash Non-Interactive Filtering
+# Filter and process in script
+matches=$(find . -type f | fzf -f '.go$' | head -10)
+echo "$matches" | xargs grep -n 'func'
+```
+
+```bash Multi-Key Actions
+result=$(git log --oneline | fzf --expect=ctrl-o,ctrl-y)
+key=$(echo "$result" | head -1)
+commit=$(echo "$result" | tail -1 | cut -d' ' -f1)
+
+case $key in
+  ctrl-o) git show $commit ;;
+  ctrl-y) echo $commit | pbcopy ;;
+  *) git show $commit ;;
+esac
+```
+</CodeGroup>

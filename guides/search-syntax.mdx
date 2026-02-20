@@ -1,0 +1,208 @@
+---
+title: Search Syntax
+description: Complete reference for fzf's powerful search syntax and operators
+---
+
+fzf uses an "extended-search mode" by default, allowing you to type multiple search terms with special operators for precise filtering.
+
+## Basic Fuzzy Matching
+
+By default, fzf performs fuzzy matching:
+
+```bash
+# Matches items containing 's', 'b', 't', 'r', 'k', 't' in order
+sbtrkt
+```
+
+Fuzzy matching means you can omit characters, and fzf will find items that contain the pattern characters in the same order.
+
+## Search Operators
+
+Here's the complete table of search operators:
+
+| Token     | Match Type                              | Description                                  | Example                        |
+| --------- | --------------------------------------- | -------------------------------------------- | ------------------------------ |
+| `sbtrkt`  | fuzzy-match                             | Items that match `sbtrkt`                    | subterfuge, streetcar          |
+| `'wild`   | exact-match (quoted)                    | Items that include `wild`                    | wilderness, wildcard           |
+| `'wild'`  | exact-boundary-match (quoted both ends) | Items that include `wild` at word boundaries | wild west, the wild            |
+| `^music`  | prefix-exact-match                      | Items that start with `music`                | music.mp3, musician            |
+| `.mp3$`   | suffix-exact-match                      | Items that end with `.mp3`                   | song.mp3, audio.mp3            |
+| `!fire`   | inverse-exact-match                     | Items that do not include `fire`             | water, earth (not fire)        |
+| `!^music` | inverse-prefix-exact-match              | Items that do not start with `music`         | audio.mp3 (not music.mp3)      |
+| `!.mp3$`  | inverse-suffix-exact-match              | Items that do not end with `.mp3`            | song.flac (not song.mp3)       |
+
+## Multiple Search Terms
+
+You can combine multiple search terms separated by spaces:
+
+```bash
+# Find items that:
+# - Start with 'music'
+# - End with '.mp3'
+# - Match 'sbtrkt' (fuzzy)
+# - Do NOT contain 'fire'
+^music .mp3$ sbtrkt !fire
+```
+
+All terms must match (AND logic) for an item to be shown.
+
+## OR Operator
+
+Use the pipe character `|` for OR logic:
+
+<CodeGroup>
+```bash Basic OR
+# Match items that end with 'go', 'rb', or 'py'
+go$ | rb$ | py$
+```
+
+```bash Combined with other operators
+# Match items that start with 'core' AND end with 'go', 'rb', or 'py'
+^core go$ | rb$ | py$
+```
+</CodeGroup>
+
+<Note>
+The OR operator has lower precedence than AND (space-separated terms).
+</Note>
+
+## Exact Match Mode
+
+If you prefer exact matching over fuzzy matching, start fzf with the `-e` or `--exact` option:
+
+```bash
+fzf --exact
+```
+
+In exact mode:
+- Search terms are matched exactly by default
+- Use `'` prefix to "unquote" and enable fuzzy matching for that term
+
+<Tabs>
+  <Tab title="Default (Fuzzy)">
+    ```bash
+    # Fuzzy match by default
+    fzf
+    
+    # Type: sbtrkt
+    # Matches: subterfuge, streetcar, etc.
+    ```
+  </Tab>
+  
+  <Tab title="Exact Mode">
+    ```bash
+    # Exact match by default
+    fzf --exact
+    
+    # Type: wild
+    # Only matches items containing exactly 'wild'
+    
+    # Type: 'sbtrkt (with quote)
+    # Enables fuzzy matching for this term
+    ```
+  </Tab>
+</Tabs>
+
+## Practical Examples
+
+### Find Configuration Files
+
+```bash
+# Find .conf files in /etc, excluding backup files
+find /etc -type f | fzf --query "^. .conf$ !backup"
+```
+
+### Filter Source Code
+
+<CodeGroup>
+```bash Find Go or Python files
+find . -type f | fzf --query ".go$ | .py$"
+```
+
+```bash Find implementation files (not tests)
+find . -type f | fzf --query "^src/ .go$ !_test"
+```
+
+```bash Find files with 'handler' but not 'test'
+find . -type f | fzf --query "handler !test"
+```
+</CodeGroup>
+
+### Search Git History
+
+```bash
+# Find commits about 'feature' but not 'bugfix'
+git log --oneline | fzf --query "feature !bugfix"
+```
+
+### Filter Process List
+
+```bash
+# Find processes containing 'python' or 'node'
+ps aux | fzf --query "python | node"
+```
+
+## Case Sensitivity
+
+fzf uses smart-case matching by default:
+
+<Tabs>
+  <Tab title="Smart Case (Default)">
+    ```bash
+    fzf # or fzf --smart-case
+    
+    # lowercase query → case-insensitive
+    # Type: music → matches Music, MUSIC, music
+    
+    # uppercase query → case-sensitive  
+    # Type: Music → only matches Music
+    ```
+  </Tab>
+  
+  <Tab title="Case Insensitive">
+    ```bash
+    fzf -i # or fzf --ignore-case
+    
+    # Always case-insensitive
+    # Type: Music → matches Music, MUSIC, music
+    ```
+  </Tab>
+  
+  <Tab title="Case Sensitive">
+    ```bash
+    fzf +i # or fzf --no-ignore-case
+    
+    # Always case-sensitive
+    # Type: Music → only matches Music
+    ```
+  </Tab>
+</Tabs>
+
+## Searching Specific Fields
+
+Use the `-n` or `--nth` option to search only specific fields:
+
+```bash
+# Search only the 3rd field onwards (space-delimited)
+ps aux | fzf --nth 3..
+
+# Search only the 1st and 3rd fields
+ps aux | fzf --nth 1,3
+
+# Custom delimiter: search 2nd field in colon-delimited data
+cat /etc/passwd | fzf --delimiter : --nth 2
+```
+
+<Tip>
+Combining `--nth` with search syntax is powerful for filtering structured data like process lists, CSV files, or command output.
+</Tip>
+
+## Disabling Extended Search
+
+To disable extended-search mode and use basic fuzzy matching only:
+
+```bash
+fzf +x # or fzf --no-extended
+```
+
+In this mode, all special characters are treated literally.

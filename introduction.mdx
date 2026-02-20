@@ -1,0 +1,182 @@
+---
+title: Introduction to fzf
+description: A general-purpose command-line fuzzy finder for files, command history, processes, and more
+---
+
+fzf is a general-purpose command-line fuzzy finder. It's an interactive filter program for any kind of list: files, command history, processes, hostnames, bookmarks, git commits, and more. It implements a "fuzzy" matching algorithm, so you can quickly type in patterns with omitted characters and still get the results you want.
+
+## Why fzf?
+
+<CardGroup cols={2}>
+  <Card title="Portable" icon="box">
+    Distributed as a single binary for easy installation across all platforms
+  </Card>
+  <Card title="Fast" icon="bolt">
+    Optimized to process millions of items instantly with efficient algorithms
+  </Card>
+  <Card title="Versatile" icon="wrench">
+    Fully customizable through an event-action binding mechanism
+  </Card>
+  <Card title="All-inclusive" icon="check">
+    Comes with integrations for Bash, Zsh, Fish, Vim, and Neovim
+  </Card>
+</CardGroup>
+
+## How It Works
+
+fzf launches an interactive finder, reads a list from STDIN, and writes the selected item to STDOUT:
+
+```bash
+# Find files and open in vim
+find * -type f | fzf > selected
+
+# Without STDIN pipe, fzf traverses the current directory
+vim $(fzf)
+
+# Use with modern tools like fd
+fd --type f | fzf
+```
+
+<Tip>
+You can override the default behavior by setting `$FZF_DEFAULT_COMMAND` to a command that generates your desired list, or by using `--walker`, `--walker-root`, and `--walker-skip` options.
+</Tip>
+
+## Key Features
+
+### Fuzzy Search Syntax
+
+fzf supports powerful search patterns out of the box:
+
+| Token | Match Type | Description |
+|-------|-----------|-------------|
+| `sbtrkt` | fuzzy-match | Items that match `sbtrkt` |
+| `'wild` | exact-match (quoted) | Items that include `wild` |
+| `^music` | prefix-exact-match | Items that start with `music` |
+| `.mp3$` | suffix-exact-match | Items that end with `.mp3` |
+| `!fire` | inverse-exact-match | Items that do not include `fire` |
+
+### Multiple Display Modes
+
+<Tabs>
+  <Tab title="Fullscreen">
+    The default mode runs fzf in fullscreen for maximum visibility:
+    
+    ```bash
+    fzf
+    ```
+  </Tab>
+  <Tab title="Height Mode">
+    Start below the cursor with a specified height:
+    
+    ```bash
+    fzf --height 40% --layout reverse --border
+    ```
+  </Tab>
+  <Tab title="Tmux Popup">
+    Open in a tmux popup window:
+    
+    ```bash
+    fzf --tmux center,80%
+    fzf --tmux bottom,40%
+    ```
+  </Tab>
+</Tabs>
+
+### Preview Window
+
+View file contents, git diffs, or any custom preview:
+
+```bash
+# Preview with bat syntax highlighting
+fzf --preview 'bat --color=always {}'
+
+# Interactive ripgrep with preview
+rg --column --line-number --no-heading --color=always --smart-case "" | \
+  fzf --ansi --delimiter : \
+      --preview 'bat --color=always {1} --highlight-line {2}' \
+      --bind 'enter:become(vim {1} +{2})'
+```
+
+## Shell Integration Features
+
+When you set up shell integration, fzf provides powerful key bindings:
+
+<CardGroup cols={3}>
+  <Card title="CTRL-T" icon="file">
+    Paste selected files and directories onto the command-line
+  </Card>
+  <Card title="CTRL-R" icon="clock-rotate-left">
+    Search through command history and paste onto the command-line
+  </Card>
+  <Card title="ALT-C" icon="folder">
+    Quickly cd into any directory with fuzzy search
+  </Card>
+</CardGroup>
+
+<Note>
+Shell integration also enables fuzzy completion with `**<TAB>` for files, directories, PIDs, hostnames, and more.
+</Note>
+
+## Get Started
+
+<CardGroup cols={3}>
+  <Card title="Installation" icon="download" href="/installation">
+    Install fzf on macOS, Linux, or Windows
+  </Card>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Get up and running in 5 minutes
+  </Card>
+  <Card title="Usage Guide" icon="book" href="/guides/usage">
+    Learn all the features and options
+  </Card>
+</CardGroup>
+
+## Real-World Examples
+
+### Git Integration
+
+```bash
+# Interactive git checkout
+git branch | fzf | xargs git checkout
+
+# Browse and show commits
+git log --oneline | fzf --preview 'git show --color=always {1}'
+
+# Interactive git add
+git status --short | fzf -m | awk '{print $2}' | xargs git add
+```
+
+### File Navigation
+
+```bash
+# Find and cd into directory
+cd $(find . -type d | fzf)
+
+# Open files in vim with preview
+vim $(fzf --preview 'bat --color=always {}')
+
+# Search file contents interactively
+rg --files-with-matches "" | fzf --preview 'rg --color=always {}'
+```
+
+### Process Management
+
+```bash
+# Kill processes interactively
+ps aux | fzf | awk '{print $2}' | xargs kill -9
+
+# Docker container management
+docker ps | fzf | awk '{print $1}' | xargs docker stop
+```
+
+## Community and Support
+
+fzf is actively developed and has a thriving community:
+
+- **GitHub**: [junegunn/fzf](https://github.com/junegunn/fzf)
+- **Wiki**: [Community examples and tips](https://github.com/junegunn/fzf/wiki/examples)
+- **Advanced Guide**: [Advanced fzf examples](https://github.com/junegunn/fzf/blob/master/ADVANCED.md)
+
+<Tip>
+Check out the [fzf Theme Playground](https://vitormv.github.io/fzf-themes/) to interactively customize your fzf theme.
+</Tip>

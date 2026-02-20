@@ -1,0 +1,273 @@
+---
+title: Display and Style Options
+description: Customize fzf's visual appearance with colors, styles, and presets
+---
+
+Control the visual appearance of fzf including color schemes, text styling, and preset configurations.
+
+## Style Presets
+
+<ParamField path="--style" type="string" default="default">
+  Apply a style preset that configures multiple visual options at once
+  
+  <Tabs>
+    <Tab title="default">
+      Standard fzf appearance with borders around sections
+      
+      ```bash
+      fzf --style=default
+      ```
+    </Tab>
+    
+    <Tab title="minimal">
+      Minimal style with reduced visual elements
+      
+      ```bash
+      fzf --style=minimal
+      ```
+    </Tab>
+    
+    <Tab title="full">
+      Full-featured style with all borders and decorations
+      
+      You can optionally specify a border style:
+      
+      ```bash
+      fzf --style=full
+      fzf --style=full:rounded
+      fzf --style=full:double
+      ```
+    </Tab>
+  </Tabs>
+  
+  <Tip>
+    Style presets provide a quick way to configure fzf's appearance. You can override individual options after setting a preset.
+  </Tip>
+</ParamField>
+
+## Color Schemes
+
+<ParamField path="--color" type="string">
+  Base color scheme and/or custom colors for different UI elements
+  
+  <Tabs>
+    <Tab title="Base Schemes">
+      ```bash
+      # Dark theme (default)
+      fzf --color=dark
+      
+      # Light theme
+      fzf --color=light
+      
+      # Base16 theme
+      fzf --color=base16
+      
+      # Black and white
+      fzf --color=bw
+      ```
+    </Tab>
+    
+    <Tab title="Custom Colors">
+      Customize individual color components:
+      
+      ```bash
+      # Custom foreground and background
+      fzf --color=fg:#bbccdd,bg:#334455
+      
+      # Highlight matching text
+      fzf --color=hl:#ff5555,hl+:#ff9999
+      
+      # Custom border colors
+      fzf --color=border:#aaaaaa,preview-border:#9999cc
+      ```
+      
+      Available color attributes:
+      - `fg`, `bg` - Foreground/background
+      - `fg+`, `bg+` - Current line foreground/background
+      - `hl`, `hl+` - Highlighted substrings
+      - `info` - Info line
+      - `prompt`, `pointer`, `marker` - UI indicators
+      - `spinner` - Streaming indicator
+      - `header` - Header text
+      - `border` - Main border
+      - `preview-fg`, `preview-bg` - Preview window colors
+      - `preview-border` - Preview border
+      - `list-border`, `list-label` - List section
+      - `input-border`, `input-label` - Input section
+      - `header-border`, `header-label` - Header section
+      - `footer-border`, `footer-label` - Footer section
+    </Tab>
+    
+    <Tab title="Complete Example">
+      ```bash
+      fzf --color=border:#aaaaaa,label:#cccccc \
+          --color=preview-border:#9999cc,preview-label:#ccccff \
+          --color=list-border:#669966,list-label:#99cc99 \
+          --color=input-border:#996666,input-label:#ffcccc \
+          --color=header-border:#6699cc,header-label:#99ccff
+      ```
+    </Tab>
+  </Tabs>
+  
+  <Note>
+    Colors can be specified as:
+    - ANSI color names: `black`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`, `white`
+    - ANSI color codes: `-1` (default), `0-15` (16 colors), `0-255` (256 colors)
+    - Hex RGB values: `#RRGGBB`
+  </Note>
+</ParamField>
+
+<ParamField path="--no-color" type="boolean">
+  Disable all colors
+  
+  ```bash
+  fzf --no-color
+  ```
+</ParamField>
+
+## Text Styling
+
+<ParamField path="--no-bold" type="boolean">
+  Do not use bold text for highlighting
+  
+  ```bash
+  fzf --no-bold
+  ```
+  
+  <Tip>
+    Useful in terminals that don't render bold text well or for a more subtle appearance.
+  </Tip>
+</ParamField>
+
+## Display Modes
+
+<ParamField path="--height" type="string">
+  Display fzf window below the cursor with the given height instead of using fullscreen
+  
+  <Tabs>
+    <Tab title="Fixed Height">
+      ```bash
+      # 40% of screen height
+      fzf --height 40%
+      
+      # 20 lines
+      fzf --height 20
+      ```
+    </Tab>
+    
+    <Tab title="Negative Height">
+      A negative value is calculated as terminal height minus the given value:
+      
+      ```bash
+      # Terminal height - 3
+      fzf --height -3
+      ```
+    </Tab>
+    
+    <Tab title="Adaptive Height">
+      Prefix with `~` to determine height according to input size:
+      
+      ```bash
+      # Use minimum space needed, up to 50%
+      fzf --height ~50%
+      
+      # Examples:
+      seq 3 | fzf --height ~100%      # Uses ~5 lines
+      seq 100 | fzf --height ~100%    # Uses full screen
+      ```
+    </Tab>
+  </Tabs>
+</ParamField>
+
+<ParamField path="--min-height" type="string" default="10+">
+  Minimum height when `--height` is given as a percentage. Add `+` to automatically increase the value according to other layout options.
+  
+  ```bash
+  fzf --height 40% --min-height 15
+  fzf --height 40% --min-height 10+
+  ```
+</ParamField>
+
+<ParamField path="--tmux" type="string">
+  Start fzf in a tmux popup (requires tmux 3.3+)
+  
+  Format: `[center|top|bottom|left|right][,SIZE[%]][,SIZE[%]][,border-native]`
+  
+  <Tabs>
+    <Tab title="Basic Usage">
+      ```bash
+      # Center popup, 50% width and height (default)
+      fzf --tmux center
+      
+      # 80% width and height
+      fzf --tmux 80%
+      ```
+    </Tab>
+    
+    <Tab title="Positioning">
+      ```bash
+      # Left side, 40% width
+      fzf --tmux left,40%
+      
+      # Top, 40% height
+      fzf --tmux top,40%
+      
+      # Bottom, 80% width, 40% height
+      fzf --tmux bottom,80%,40%
+      ```
+    </Tab>
+    
+    <Tab title="Native Border">
+      ```bash
+      # Use tmux's native popup border
+      fzf --tmux center,border-native
+      ```
+    </Tab>
+  </Tabs>
+  
+  <Note>
+    `--tmux` is silently ignored when not running inside tmux.
+  </Note>
+</ParamField>
+
+## Theme Examples
+
+<CodeGroup>
+```bash Monokai
+fzf --color=bg+:#3a3a3a,bg:#1e1e1e,spinner:#a6e22e,hl:#f92672 \
+    --color=fg:#f8f8f2,header:#ae81ff,info:#ae81ff,pointer:#a6e22e \
+    --color=marker:#a6e22e,fg+:#f8f8f2,prompt:#f92672,hl+:#f92672
+```
+
+```bash Solarized Dark
+fzf --color=bg+:#073642,bg:#002b36,spinner:#719e07,hl:#586e75 \
+    --color=fg:#839496,header:#586e75,info:#cb4b16,pointer:#719e07 \
+    --color=marker:#719e07,fg+:#839496,prompt:#719e07,hl+:#719e07
+```
+
+```bash Nord
+fzf --color=bg+:#3b4252,bg:#2e3440,spinner:#81a1c1,hl:#616e88 \
+    --color=fg:#d8dee9,header:#616e88,info:#81a1c1,pointer:#81a1c1 \
+    --color=marker:#81a1c1,fg+:#d8dee9,prompt:#81a1c1,hl+:#81a1c1
+```
+
+```bash Dracula
+fzf --color=bg+:#44475a,bg:#282a36,spinner:#50fa7b,hl:#ff79c6 \
+    --color=fg:#f8f8f2,header:#6272a4,info:#8be9fd,pointer:#50fa7b \
+    --color=marker:#50fa7b,fg+:#f8f8f2,prompt:#50fa7b,hl+:#ff79c6
+```
+</CodeGroup>
+
+<Tip>
+  Visit [fzf Theme Playground](https://vitormv.github.io/fzf-themes/) to interactively create and preview custom themes.
+</Tip>
+
+## Combining Options
+
+```bash
+fzf --style=full \
+    --color=border:#aaaaaa \
+    --no-bold \
+    --height 50% \
+    --preview 'cat {}'
+```

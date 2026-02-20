@@ -1,0 +1,257 @@
+---
+title: Key Bindings for Command-Line
+description: Learn how to use CTRL-T, CTRL-R, and ALT-C key bindings for shell integration
+---
+
+After [setting up shell integration](/installation#shell-integration), you can use three powerful key bindings in your shell: `CTRL-T`, `CTRL-R`, and `ALT-C`.
+
+## CTRL-T - Paste Files and Directories
+
+`CTRL-T` opens fzf and pastes the selected files and directories onto the command-line.
+
+### Basic Usage
+
+```bash
+# Press CTRL-T in your shell
+vim <CTRL-T>
+
+# fzf opens, you select files, they're pasted:
+vim src/main.go src/utils.go
+```
+
+### How It Works
+
+- **List generation**: Uses `--walker file,dir,follow,hidden` option by default
+- **Multi-select**: You can select multiple items with `TAB` and `Shift-TAB`
+- **Result**: Selected paths are pasted at the cursor position
+
+### Configuration
+
+<Steps>
+  <Step title="Customize the file list command">
+    Set `FZF_CTRL_T_COMMAND` to use a custom command:
+    
+    ```bash
+    # Use fd instead of default walker
+    export FZF_CTRL_T_COMMAND='fd --type f --strip-cwd-prefix'
+    ```
+  </Step>
+  
+  <Step title="Customize fzf options">
+    Set `FZF_CTRL_T_OPTS` to pass additional options:
+    
+    ```bash
+    # Preview file content using bat
+    export FZF_CTRL_T_OPTS="
+      --walker-skip .git,node_modules,target
+      --preview 'bat -n --color=always {}'
+      --bind 'ctrl-/:change-preview-window(down|hidden|)'"
+    ```
+  </Step>
+  
+  <Step title="Disable CTRL-T (optional)">
+    Set `FZF_CTRL_T_COMMAND` to empty when sourcing the integration:
+    
+    ```bash
+    # bash
+    FZF_CTRL_T_COMMAND= eval "$(fzf --bash)"
+    
+    # zsh
+    FZF_CTRL_T_COMMAND= source <(fzf --zsh)
+    
+    # fish
+    fzf --fish | FZF_CTRL_T_COMMAND= source
+    ```
+  </Step>
+</Steps>
+
+<Tip>
+The walker options (`--walker-skip`, etc.) can be set in `FZF_CTRL_T_OPTS` as an alternative to `FZF_CTRL_T_COMMAND`:
+
+```bash
+export FZF_CTRL_T_OPTS="--walker-skip .git,node_modules,target"
+```
+</Tip>
+
+## CTRL-R - Search Command History
+
+`CTRL-R` opens fzf with your shell command history for quick recall.
+
+### Basic Usage
+
+```bash
+# Press CTRL-R in your shell
+<CTRL-R>
+
+# fzf opens with your command history
+# Start typing to search, press Enter to paste the selected command
+```
+
+### Features
+
+<Tabs>
+  <Tab title="Toggle Sorting">
+    Press `CTRL-R` again to toggle between:
+    - **Relevance order** (default): Results sorted by match quality
+    - **Chronological order**: Most recent commands first
+  </Tab>
+  
+  <Tab title="Raw Mode">
+    Press `ALT-R` to toggle "raw" mode:
+    - See surrounding items of each match
+    - Use `CTRL-N` and `CTRL-P` to navigate between matching items only
+  </Tab>
+  
+  <Tab title="Line Wrapping">
+    Press `CTRL-/` or `ALT-/` to toggle line wrapping for long commands
+  </Tab>
+</Tabs>
+
+### Configuration
+
+```bash
+# CTRL-Y to copy the command into clipboard using pbcopy
+export FZF_CTRL_R_OPTS="
+  --bind 'ctrl-y:execute-silent(echo -n {2..} | pbcopy)+abort'
+  --color header:italic
+  --header 'Press CTRL-Y to copy command into clipboard'"
+```
+
+### Disable CTRL-R
+
+To disable the CTRL-R binding:
+
+```bash
+# bash
+FZF_CTRL_R_COMMAND= eval "$(fzf --bash)"
+
+# zsh  
+FZF_CTRL_R_COMMAND= source <(fzf --zsh)
+
+# fish
+fzf --fish | FZF_CTRL_R_COMMAND= source
+```
+
+<Warning>
+Custom override via a non-empty `FZF_CTRL_R_COMMAND` is not yet supported and will emit a warning.
+</Warning>
+
+## ALT-C - Change Directory
+
+`ALT-C` opens fzf to select a directory and changes to it.
+
+### Basic Usage
+
+```bash
+# Press ALT-C in your shell
+<ALT-C>
+
+# fzf opens with directories, select one and press Enter
+# Your shell changes to that directory
+```
+
+### How It Works
+
+- **List generation**: Uses `--walker dir,follow,hidden` option by default
+- **Single-select**: Only one directory can be selected
+- **Result**: Shell changes to the selected directory using `cd`
+
+### Configuration
+
+<CodeGroup>
+```bash Custom command
+# Use fd to generate directory list
+export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
+```
+
+```bash Preview with tree
+# Show directory tree in preview
+export FZF_ALT_C_OPTS="
+  --walker-skip .git,node_modules,target
+  --preview 'tree -C {}'"
+```
+
+```bash Preview with ls
+# Show directory contents in preview
+export FZF_ALT_C_OPTS="
+  --preview 'ls -la {}'"
+```
+</CodeGroup>
+
+### Disable ALT-C
+
+To disable the ALT-C binding:
+
+```bash
+# bash
+FZF_ALT_C_COMMAND= eval "$(fzf --bash)"
+
+# zsh
+FZF_ALT_C_COMMAND= source <(fzf --zsh)
+
+# fish
+fzf --fish | FZF_ALT_C_COMMAND= source
+```
+
+### Fish Shell Special Behavior
+
+In fish shell, `CTRL-T` uses the last token on the command-line as the root directory:
+
+```fish
+# Position cursor at the end and press CTRL-T
+ls /var/<CTRL-T>
+
+# Lists all files and directories under /var/
+```
+
+When using a custom `FZF_CTRL_T_COMMAND`, use the unexpanded `$dir` variable:
+
+```fish
+set -g FZF_CTRL_T_COMMAND "command find -L \$dir -type f 2> /dev/null | sed '1d; s#^\./##'"
+```
+
+## Display Modes
+
+You can configure display modes for these bindings separately:
+
+```bash
+# Global configuration
+export FZF_DEFAULT_OPTS='--height 40% --border'
+
+# Per-binding configuration
+export FZF_CTRL_T_OPTS='--preview "bat --color=always {}"'
+export FZF_CTRL_R_OPTS='--tmux bottom,60% --height 60% --border top'
+export FZF_ALT_C_OPTS='--preview "tree -C {}"'
+```
+
+<Tip>
+The per-binding options (`FZF_CTRL_T_OPTS`, etc.) override the global `FZF_DEFAULT_OPTS`.
+</Tip>
+
+## Complete Example Configuration
+
+Here's a complete example with all three bindings configured:
+
+```bash
+# CTRL-T: File and directory selection with preview
+export FZF_CTRL_T_COMMAND='fd --type f --type d --hidden --follow --exclude .git'
+export FZF_CTRL_T_OPTS="
+  --preview 'bat -n --color=always --line-range :500 {}'
+  --bind 'ctrl-/:change-preview-window(down|hidden|)'
+  --bind 'ctrl-y:execute-silent(echo -n {} | pbcopy)'
+  --header 'CTRL-Y: Copy path to clipboard'"
+
+# CTRL-R: Command history with copy functionality
+export FZF_CTRL_R_OPTS="
+  --preview 'echo {}' --preview-window up:3:hidden:wrap
+  --bind 'ctrl-/:toggle-preview'
+  --bind 'ctrl-y:execute-silent(echo -n {2..} | pbcopy)+abort'
+  --color header:italic
+  --header 'Press CTRL-Y to copy command into clipboard'"
+
+# ALT-C: Directory selection with tree preview
+export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
+export FZF_ALT_C_OPTS="
+  --preview 'tree -C {} | head -200'
+  --bind 'ctrl-/:change-preview-window(down|hidden|)'"
+```

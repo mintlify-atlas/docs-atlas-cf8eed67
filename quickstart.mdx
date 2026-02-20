@@ -1,80 +1,436 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quick Start
+description: Get up and running with fzf in 5 minutes - from basic usage to powerful integrations
 ---
 
-## Get started in three steps
-
-Get your documentation site running locally and make your first customization.
-
-### Step 1: Set up your local environment
-
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
+This guide will get you productive with fzf in under 5 minutes. We'll cover basic usage, shell integration, and practical examples.
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+Make sure you've [installed fzf](/installation) before proceeding with this guide.
 </Note>
+
+## Basic Usage
+
+<Steps>
+  <Step title="Your first fzf command">
+    List files in the current directory and select one:
+    
+    ```bash
+    ls | fzf
+    ```
+    
+    - Type to search (fuzzy matching works automatically)
+    - Use arrow keys or `CTRL-J`/`CTRL-K` to navigate
+    - Press `Enter` to select
+    - Press `ESC` or `CTRL-C` to cancel
+  </Step>
+  
+  <Step title="Open a file in your editor">
+    Select a file and open it in vim:
+    
+    ```bash
+    vim $(fzf)
+    ```
+    
+    Without any input, fzf automatically traverses the current directory to find files.
+    
+    <Tip>
+    Use `fzf --print0 | xargs -0 -o vim` for a more robust solution that handles spaces in filenames.
+    </Tip>
+  </Step>
+  
+  <Step title="Try multi-select">
+    Select multiple files using TAB:
+    
+    ```bash
+    # Select multiple files and open in vim
+    vim $(fzf -m)
+    ```
+    
+    - Press `TAB` to mark items
+    - Press `Shift-TAB` to unmark
+    - Press `Enter` to confirm selection
+  </Step>
+  
+  <Step title="Use the preview window">
+    Preview file contents while searching:
+    
+    ```bash
+    fzf --preview 'cat {}'
+    ```
+    
+    For better syntax highlighting, use `bat`:
+    
+    ```bash
+    fzf --preview 'bat --color=always --style=numbers {}'
+    ```
+    
+    <Tip>
+    Press `CTRL-/` to toggle the preview window on and off.
+    </Tip>
+  </Step>
+</Steps>
+
+## Search Syntax Quick Reference
+
+fzf's fuzzy matching is powerful. Here are the essential search patterns:
+
+<CodeGroup>
+```bash Fuzzy Match
+# Type characters in any order
+fzf
+# Type: "fz" matches "fzf", "fuzzy", "frozen", etc.
+```
+
+```bash Exact Match
+# Use single quotes for exact matching
+fzf
+# Type: 'fzf matches only "fzf"
+```
+
+```bash Prefix Match
+# Use ^ for start of line
+fzf
+# Type: ^fzf matches "fzf-test" but not "test-fzf"
+```
+
+```bash Suffix Match
+# Use $ for end of line
+fzf
+# Type: .txt$ matches "readme.txt" but not "txt.md"
+```
+
+```bash Inverse Match
+# Use ! to exclude
+fzf
+# Type: !test excludes items containing "test"
+```
+</CodeGroup>
+
+## Shell Integration
+
+Shell integration provides three powerful key bindings that work in any shell:
+
+<Steps>
+  <Step title="CTRL-T: Find files and directories">
+    Press `CTRL-T` at the command line to open fzf and select files/directories:
+    
+    ```bash
+    vim    # Press CTRL-T here to select files
+    ```
+    
+    Customize with environment variables:
+    
+    ```bash
+    # Add to ~/.bashrc or ~/.zshrc
+    export FZF_CTRL_T_OPTS="
+      --preview 'bat -n --color=always {}'
+      --bind 'ctrl-/:change-preview-window(down|hidden|)'"
+    ```
+  </Step>
+  
+  <Step title="CTRL-R: Search command history">
+    Press `CTRL-R` to search your command history:
+    
+    ```bash
+    # Press CTRL-R and start typing to search history
+    ```
+    
+    Useful tips:
+    - Press `CTRL-R` again to toggle chronological order
+    - Press `ALT-R` to toggle "raw" mode
+    - Press `CTRL-/` to toggle line wrapping
+    
+    Customize the appearance:
+    
+    ```bash
+    # Add to ~/.bashrc or ~/.zshrc
+    export FZF_CTRL_R_OPTS="
+      --preview 'echo {}' --preview-window up:3:hidden:wrap
+      --bind 'ctrl-/:toggle-preview'
+      --bind 'ctrl-y:execute-silent(echo -n {2..} | pbcopy)+abort'
+      --color header:italic
+      --header 'Press CTRL-Y to copy command into clipboard'"
+    ```
+  </Step>
+  
+  <Step title="ALT-C: Change directory">
+    Press `ALT-C` to cd into any directory:
+    
+    ```bash
+    # Press ALT-C to select and cd into a directory
+    ```
+    
+    Add a tree preview:
+    
+    ```bash
+    # Add to ~/.bashrc or ~/.zshrc
+    export FZF_ALT_C_OPTS="
+      --preview 'tree -C {} | head -200'"
+    ```
+  </Step>
+</Steps>
+
+## Fuzzy Completion
+
+Fuzzy completion is triggered with `**` followed by TAB:
+
+<Steps>
+  <Step title="File and directory completion">
+    ```bash
+    # Files under current directory
+    vim **<TAB>
+    
+    # Files under parent directory
+    vim ../**<TAB>
+    
+    # Files matching a pattern
+    vim ../fzf**<TAB>
+    
+    # Directories only
+    cd **<TAB>
+    ```
+  </Step>
+  
+  <Step title="Process completion">
+    ```bash
+    # Kill processes with fuzzy search
+    kill -9 **<TAB>
+    ```
+    
+    Select multiple processes with TAB and Shift-TAB.
+  </Step>
+  
+  <Step title="SSH hostname completion">
+    ```bash
+    # Connect to hosts from ~/.ssh/config
+    ssh **<TAB>
+    ```
+  </Step>
+  
+  <Step title="Environment variable completion">
+    ```bash
+    # Bash and Zsh
+    export **<TAB>
+    unset **<TAB>
+    
+    # Fish (use Shift-TAB)
+    set <SHIFT-TAB>
+    ```
+  </Step>
+</Steps>
+
+## Practical Examples
+
+### Git Workflow
+
+<CodeGroup>
+```bash Interactive Checkout
+# Checkout a branch interactively
+git branch | fzf | xargs git checkout
+```
+
+```bash Browse Commits
+# View commit details before selecting
+git log --oneline --color=always | \
+  fzf --ansi --preview 'git show --color=always {1}' | \
+  awk '{print $1}'
+```
+
+```bash Interactive Add
+# Select files to stage
+git status --short | \
+  fzf -m | \
+  awk '{print $2}' | \
+  xargs git add
+```
+
+```bash Search Commits
+# Find commits by message or content
+git log --oneline | \
+  fzf --preview 'git show --color=always {1}' \
+      --bind 'enter:become(git show {1})'
+```
+</CodeGroup>
+
+### File Operations
+
+<CodeGroup>
+```bash Find and Edit
+# Find files and open in editor
+fd --type f | fzf --preview 'bat --color=always {}' | xargs vim
+```
+
+```bash Search File Contents
+# Interactive ripgrep
+rg --files-with-matches "" | \
+  fzf --preview 'bat --color=always {}' \
+      --preview-window '~3'
+```
+
+```bash Delete Files
+# Safely select files to delete
+fd --type f | fzf -m --preview 'bat --color=always {}' | xargs rm -i
+```
+
+```bash Copy Files
+# Select files to copy to destination
+fd --type f | fzf -m | xargs -I {} cp {} /destination/
+```
+</CodeGroup>
+
+### Process Management
+
+<CodeGroup>
+```bash Kill Process
+# Interactive process killer
+ps aux | fzf | awk '{print $2}' | xargs kill -9
+```
+
+```bash Docker Containers
+# Stop containers interactively
+docker ps | fzf | awk '{print $1}' | xargs docker stop
+```
+
+```bash System Monitor
+# Monitor processes with reload
+ps -ef | \
+  fzf --bind 'ctrl-r:reload(ps -ef)' \
+      --header 'Press CTRL-R to reload' \
+      --header-lines=1
+```
+</CodeGroup>
+
+### Advanced: Interactive Ripgrep
+
+Create a powerful file content search:
+
+```bash
+# Interactive ripgrep launcher
+RG_PREFIX="rg --column --line-number --no-heading --color=always --smart-case "
+INITIAL_QUERY=""
+: | fzf --ansi --disabled --query "$INITIAL_QUERY" \
+    --bind "start:reload:$RG_PREFIX {q}" \
+    --bind "change:reload:sleep 0.1; $RG_PREFIX {q} || true" \
+    --delimiter : \
+    --preview 'bat --color=always {1} --highlight-line {2}' \
+    --preview-window 'up,60%,border-bottom,+{2}+3/3,~3' \
+    --bind 'enter:become(vim {1} +{2})'
+```
+
+<Tip>
+Save this as a shell function or alias for quick access. This combines ripgrep's speed with fzf's interactivity.
+</Tip>
+
+## Customization Basics
+
+### Set Default Options
+
+```bash
+# Add to ~/.bashrc, ~/.zshrc, or ~/.config/fish/config.fish
+export FZF_DEFAULT_OPTS="
+  --height 40%
+  --layout reverse
+  --border
+  --inline-info
+  --preview-window 'right:60%'
+  --bind 'ctrl-/:change-preview-window(down|hidden|)'"
+```
+
+### Use Better Tools for Input
+
+```bash
+# Use fd instead of find (respects .gitignore)
+export FZF_DEFAULT_COMMAND='fd --type f --strip-cwd-prefix --hidden --follow --exclude .git'
+
+# Also use for CTRL-T
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+
+# Use fd for directory search (ALT-C)
+export FZF_ALT_C_COMMAND='fd --type d --hidden --follow --exclude .git'
+```
+
+### Color Schemes
+
+<CodeGroup>
+```bash Monokai
+export FZF_DEFAULT_OPTS=$FZF_DEFAULT_OPTS'
+ --color=fg:#f8f8f2,bg:#272822,hl:#66d9ef
+ --color=fg+:#f8f8f2,bg+:#44475a,hl+:#8be9fd
+ --color=info:#f1fa8c,prompt:#50fa7b,pointer:#ff79c6
+ --color=marker:#ff79c6,spinner:#ffb86c,header:#6272a4'
+```
+
+```bash Nord
+export FZF_DEFAULT_OPTS=$FZF_DEFAULT_OPTS'
+ --color=fg:#e5e9f0,bg:#3b4252,hl:#81a1c1
+ --color=fg+:#e5e9f0,bg+:#434c5e,hl+:#81a1c1
+ --color=info:#eacb8a,prompt:#bf6069,pointer:#b48dac
+ --color=marker:#a3be8b,spinner:#b48dac,header:#a3be8b'
+```
+
+```bash Dracula
+export FZF_DEFAULT_OPTS=$FZF_DEFAULT_OPTS'
+ --color=fg:#f8f8f2,bg:#282a36,hl:#bd93f9
+ --color=fg+:#f8f8f2,bg+:#44475a,hl+:#bd93f9
+ --color=info:#ffb86c,prompt:#50fa7b,pointer:#ff79c6
+ --color=marker:#ff79c6,spinner:#ffb86c,header:#6272a4'
+```
+</CodeGroup>
+
+<Tip>
+Visit the [fzf Theme Playground](https://vitormv.github.io/fzf-themes/) to create and preview custom color schemes.
+</Tip>
+
+## Common Patterns
+
+Here are some patterns to add to your shell configuration:
+
+```bash
+# fe - Open file in editor
+fe() {
+  local files
+  files=$(fzf --query="$1" --multi --select-1 --exit-0 \
+    --preview 'bat --color=always --style=numbers {}')
+  [[ -n "$files" ]] && ${EDITOR:-vim} "${files[@]}"
+}
+
+# fcd - cd to selected directory
+fcd() {
+  local dir
+  dir=$(find ${1:-.} -path '*/\.*' -prune -o -type d -print 2> /dev/null | fzf +m) &&
+  cd "$dir"
+}
+
+# fkill - kill process
+fkill() {
+  local pid
+  pid=$(ps aux | sed 1d | fzf -m | awk '{print $2}')
+  [[ -n "$pid" ]] && echo "$pid" | xargs kill -${1:-9}
+}
+
+# fbr - checkout git branch
+fbr() {
+  local branches branch
+  branches=$(git branch --all | grep -v HEAD) &&
+  branch=$(echo "$branches" | fzf -d $(( 2 + $(wc -l <<< "$branches") )) +m) &&
+  git checkout $(echo "$branch" | sed "s/.* //" | sed "s#remotes/[^/]*/##")
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Usage Guide" icon="book" href="/guides/usage">
+    Deep dive into all fzf features and options
+  </Card>
+  <Card title="Configuration" icon="gear" href="/guides/configuration">
+    Customize fzf for your workflow
+  </Card>
+  <Card title="Examples" icon="code" href="/advanced/examples">
+    Explore more real-world examples
+  </Card>
+  <Card title="Advanced Topics" icon="graduation-cap" href="/advanced/preview-window">
+    Learn about preview windows, reloading, and more
+  </Card>
+</CardGroup>

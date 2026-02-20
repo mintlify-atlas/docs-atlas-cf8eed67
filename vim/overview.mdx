@@ -1,0 +1,83 @@
+---
+title: "Vim Integration Overview"
+description: "Integrate fzf into Vim and Neovim with powerful fuzzy finding capabilities"
+---
+
+The Vim plugin for fzf provides seamless integration between the fuzzy finder and your Vim workflow. It offers core functions for building custom commands and a basic file selector to get you started.
+
+## Core Components
+
+The Vim plugin provides three essential components:
+
+<Steps>
+  <Step title="fzf#run() function">
+    Starts fzf inside Vim with a spec dictionary, giving you full control over sources, sinks, and options.
+  </Step>
+  
+  <Step title="fzf#wrap() function">
+    Wraps your spec with global preferences like `g:fzf_layout`, `g:fzf_action`, and `g:fzf_colors` for consistent behavior.
+  </Step>
+  
+  <Step title=":FZF command">
+    A basic fuzzy file selector built on top of `fzf#run()` - perfect for quick file navigation or as a reference implementation.
+  </Step>
+</Steps>
+
+## What You Can Build
+
+With these core functions, you can create powerful custom commands:
+
+- **File selectors** with custom sources (git files, recent files, buffers)
+- **Color scheme pickers** for instant theme switching
+- **Custom fuzzy finders** for any list-based data
+- **Advanced commands** with multi-select and custom key bindings
+
+<Note>
+The most important function is `fzf#run()`, but we'll start with the `:FZF` command to understand the basics before diving into custom implementations.
+</Note>
+
+## Basic Example
+
+Here's a simple example using the built-in `:FZF` command:
+
+```vim
+" Look for files under current directory
+:FZF
+
+" Look for files under your home directory
+:FZF ~
+
+" With fzf command-line options
+:FZF --reverse --info=inline /tmp
+
+" Bang version starts fzf in fullscreen mode
+:FZF!
+```
+
+Similar to ctrlp.vim, use these key bindings to open selected files:
+
+- `Enter` - Open in current window
+- `CTRL-T` - Open in new tab
+- `CTRL-X` - Open in horizontal split
+- `CTRL-V` - Open in vertical split
+
+<Tip>
+The environment variables `FZF_DEFAULT_COMMAND` and `FZF_DEFAULT_OPTS` also apply to the Vim plugin.
+</Tip>
+
+## For Neovim Users
+
+<Note>
+If you use Neovim and prefer Lua-based plugins, check out [fzf-lua](https://github.com/ibhagwan/fzf-lua) as an alternative with native Neovim integration.
+</Note>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/vim/installation">
+    Set up fzf in your Vim configuration
+  </Card>
+  <Card title="Usage Guide" icon="book" href="/vim/usage">
+    Learn advanced usage patterns and customization
+  </Card>
+</CardGroup>

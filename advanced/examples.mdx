@@ -1,0 +1,398 @@
+---
+title: Real-World Examples
+description: Practical examples including git workflows, process management, Kubernetes, and log tailing
+---
+
+This page showcases real-world examples that demonstrate fzf's advanced features in practical scenarios.
+
+## Git Object Workflows
+
+The [fzf-git.sh](https://github.com/junegunn/fzf-git.sh) project provides powerful key bindings for Git objects.
+
+<Tip>
+These are seriously useful bindings. Check out the full project at [github.com/junegunn/fzf-git.sh](https://github.com/junegunn/fzf-git.sh)
+</Tip>
+
+### Git Status Files
+
+**Key binding:** <kbd>CTRL-G</kbd> <kbd>CTRL-F</kbd>
+
+Interactively select files from `git status`:
+
+```bash
+# Example implementation
+git status --short | fzf -m \
+  --preview 'git diff --color=always {2}' \
+  --bind 'ctrl-s:execute(git add {2})' \
+  --bind 'ctrl-u:execute(git reset HEAD {2})' \
+  --header 'CTRL-S: stage | CTRL-U: unstage'
+```
+
+<Accordion title="Features">
+- Multi-select files with TAB
+- Preview shows git diff
+- Stage/unstage directly from fzf
+- Works with renamed and moved files
+</Accordion>
+
+### Branches
+
+**Key binding:** <kbd>CTRL-G</kbd> <kbd>CTRL-B</kbd>
+
+Interactively select and checkout branches:
+
+```bash
+# Example implementation
+git branch --all --format='%(refname:short)' | fzf \
+  --preview 'git log --oneline --graph --date=short --color=always --pretty="format:%C(auto)%cd %h%d %s" {}' \
+  --bind 'enter:become(git checkout {})' \
+  --header 'Select branch to checkout'
+```
+
+### Commit Hashes
+
+**Key binding:** <kbd>CTRL-G</kbd> <kbd>CTRL-H</kbd>
+
+Interactively browse and select commits:
+
+```bash
+# Example implementation
+git log --oneline --color=always | fzf --ansi \
+  --preview 'git show --color=always {1}' \
+  --bind 'enter:execute(git show {1} | less -R)' \
+  --bind 'ctrl-y:execute-silent(echo {1} | pbcopy)' \
+  --header 'Enter: view | CTRL-Y: copy hash'
+```
+
+### Git Log Browser
+
+Full-featured git log browser:
+
+```bash
+git log --oneline --color=always | fzf --ansi \
+  --preview 'git show --color=always {1}' \
+  --preview-window=right:60%:wrap \
+  --bind 'enter:become(git show {1})' \
+  --bind 'ctrl-o:execute(git show {1} > /tmp/git-show.patch && vim /tmp/git-show.patch)' \
+  --bind 'ctrl-d:preview-down' \
+  --bind 'ctrl-u:preview-up' \
+  --bind 'ctrl-y:execute-silent(echo {1} | pbcopy)+abort' \
+  --header 'Enter:show | ^O:open in vim | ^Y:copy hash'
+```
+
+## Process Management
+
+### Interactive Process Killer
+
+Basic interactive process selector:
+
+```bash
+ps -ef | fzf | awk '{print $2}' | xargs kill -9
+```
+
+### Advanced Process Manager
+
+With reload and preview:
+
+```bash
+(date; ps -ef) |
+  fzf --bind='ctrl-r:reload(date; ps -ef)' \
+      --header=$'Press CTRL-R to reload\n\n' --header-lines=2 \
+      --preview='echo {}' --preview-window=down,3,wrap \
+      --layout=reverse --height=80% | awk '{print $2}' | xargs kill -9
+```
+
+<Accordion title="Features">
+- Shows current date and time
+- CTRL-R refreshes the process list
+- Preview shows full command line
+- Header lines excluded from selection
+- Extracts PID and kills selected process
+</Accordion>
+
+### Process Details Viewer
+
+View detailed information about processes:
+
+```bash
+ps -ef | fzf \
+  --header-lines=1 \
+  --preview 'ps -fp {2} | tail -n +2; echo; lsof -p {2} 2>/dev/null | head -20' \
+  --preview-window=right:60%:wrap \
+  --bind 'ctrl-r:reload(ps -ef)' \
+  --bind 'enter:execute(kill -9 {2})' \
+  --bind 'ctrl-k:execute(kill -9 {2})+reload(ps -ef)'
+```
+
+## Kubernetes Pod Management
+
+Interactive pod browser with multiple actions:
+
+```bash
+pods() {
+  command='kubectl get pods --all-namespaces' fzf \
+    --info=inline --layout=reverse --header-lines=1 \
+    --prompt "$(kubectl config current-context | sed 's/-context$//')> " \
+    --header $'╱ Enter (kubectl exec) ╱ CTRL-O (open log in editor) ╱ CTRL-R (reload) ╱\n\n' \
+    --bind 'start,ctrl-r:reload:$command' \
+    --bind 'ctrl-/:change-preview-window(80%,border-bottom|hidden|)' \
+    --bind 'enter:execute:kubectl exec -it --namespace {1} {2} -- bash' \
+    --bind 'ctrl-o:execute:${EDITOR:-vim} <(kubectl logs --all-containers --namespace {1} {2})' \
+    --preview-window up:follow \
+    --preview 'kubectl logs --follow --all-containers --tail=10000 --namespace {1} {2}' "$@"
+}
+```
+
+<Steps>
+  <Step title="List pods">
+    Shows all pods across namespaces with header line
+  </Step>
+  
+  <Step title="Live log preview">
+    Preview window follows logs like `tail -f` (limited to 10k lines)
+  </Step>
+  
+  <Step title="Interactive actions">
+    - **Enter**: Opens shell in selected pod
+    - **CTRL-O**: Opens logs in your editor
+    - **CTRL-R**: Refreshes pod list
+    - **CTRL-/**: Toggles preview window
+  </Step>
+</Steps>
+
+<Warning>
+Limit log tail with `--tail=10000` to prevent excessive memory consumption.
+</Warning>
+
+## Log Tailing
+
+### Basic Log Tailing
+
+Simple log viewer with follow:
+
+```bash
+fzf --preview-window follow --preview 'for i in $(seq 100000); do
+  echo "$i"
+  sleep 0.01
+  (( i % 300 == 0 )) && printf "\033[2J"
+done'
+```
+
+<Note>
+`\033[2J` is an ANSI escape sequence for clearing the screen. fzf clears previous preview contents when it reads this code.
+</Note>
+
+### Log File Viewer
+
+Browse log files with live preview:
+
+```bash
+find /var/log -type f -readable 2>/dev/null | fzf \
+  --preview 'tail -100f {}' \
+  --preview-window follow:wrap \
+  --bind 'enter:execute(less +G {})' \
+  --bind 'ctrl-o:execute($EDITOR {})'
+```
+
+### Multi-Log Viewer
+
+Tail multiple log files:
+
+```bash
+find . -name '*.log' | fzf -m \
+  --preview 'tail -20 {}' \
+  --bind 'enter:execute(tail -f {+} | less)'
+```
+
+## Directory Navigation
+
+### Toggle Between Files and Directories
+
+```bash
+find * | fzf --prompt 'All> ' \
+             --header 'CTRL-D: Directories / CTRL-F: Files' \
+             --bind 'ctrl-d:change-prompt(Directories> )+reload(find * -type d)' \
+             --bind 'ctrl-f:change-prompt(Files> )+reload(find * -type f)'
+```
+
+### Single Key Toggle
+
+```bash
+fd --type file |
+  fzf --prompt 'Files> ' \
+      --header 'CTRL-T: Switch between Files/Directories' \
+      --bind 'ctrl-t:transform:[[ ! $FZF_PROMPT =~ Files ]] &&
+              echo "change-prompt(Files> )+reload(fd --type file)" ||
+              echo "change-prompt(Directories> )+reload(fd --type directory)"' \
+      --preview '[[ $FZF_PROMPT =~ Files ]] && bat --color=always {} || tree -C {}'
+```
+
+<Accordion title="How it works">
+1. **State storage**: Current mode stored in `$FZF_PROMPT`
+2. **Transform action**: Checks prompt to determine mode
+3. **Dynamic reload**: Switches between `fd --type file` and `fd --type directory`
+4. **Dynamic preview**: Uses `bat` for files, `tree` for directories
+</Accordion>
+
+## File Operations
+
+### File Browser with Actions
+
+```bash
+find . -type f | fzf \
+  --preview 'bat --color=always --style=numbers {}' \
+  --bind 'f1:execute(less -f {})' \
+  --bind 'ctrl-y:execute-silent(echo {} | pbcopy)' \
+  --bind 'ctrl-e:execute($EDITOR {})' \
+  --bind 'ctrl-o:execute(open {})' \
+  --bind 'ctrl-d:execute(trash {})' \
+  --header 'F1:view | ^Y:copy path | ^E:edit | ^O:open | ^D:trash'
+```
+
+### Image Browser
+
+```bash
+fd -e jpg -e png -e gif | fzf \
+  --preview 'fzf-preview.sh {}' \
+  --bind 'enter:execute(open {})' \
+  --bind 'ctrl-y:execute-silent(echo {} | pbcopy)' \
+  --preview-window=right:70%
+```
+
+## Docker Container Management
+
+```bash
+docker ps --format 'table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Image}}' | fzf \
+  --header-lines=1 \
+  --preview 'docker logs --tail=100 {1}' \
+  --preview-window=down:60%:wrap:follow \
+  --bind 'enter:execute(docker exec -it {1} /bin/bash)' \
+  --bind 'ctrl-s:execute(docker stop {1})' \
+  --bind 'ctrl-r:reload(docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Image}}")' \
+  --bind 'ctrl-k:execute(docker kill {1})+reload(docker ps --format "table {{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Image}}")' \
+  --header 'Enter:exec | ^S:stop | ^K:kill | ^R:reload'
+```
+
+## SSH Host Selection
+
+```bash
+# Extract hosts from ~/.ssh/config
+grep "^Host " ~/.ssh/config | awk '{print $2}' | fzf \
+  --preview 'grep -A 20 "^Host {}" ~/.ssh/config' \
+  --bind 'enter:become(ssh {})'
+```
+
+## Command History Search
+
+Enhanced history search:
+
+```bash
+# For bash
+history | fzf --tac --no-sort \
+  --preview 'echo {}' --preview-window down:3:wrap \
+  --bind 'enter:execute(echo {2..} | pbcopy)+abort' \
+  --header 'Select command to copy to clipboard'
+
+# For zsh with timestamps
+history -i | fzf --tac --no-sort \
+  --preview 'echo {}' --preview-window down:3:wrap \
+  --bind 'enter:execute(echo {4..} | pbcopy)+abort'
+```
+
+## Package Manager Integration
+
+### Homebrew Package Browser
+
+```bash
+brew search | fzf \
+  --preview 'brew info {}' \
+  --bind 'enter:execute(brew install {})' \
+  --bind 'ctrl-u:execute(brew uninstall {})' \
+  --bind 'ctrl-i:reload(brew list)' \
+  --header 'Enter:install | ^U:uninstall | ^I:show installed'
+```
+
+### APT Package Browser
+
+```bash
+apt-cache search . | fzf \
+  --preview 'apt-cache show {1}' \
+  --bind 'enter:execute(sudo apt install {1})' \
+  --bind 'ctrl-r:reload(apt-cache search .)' \
+  --header 'Enter:install | ^R:reload'
+```
+
+## Project Switcher
+
+Quickly navigate between projects:
+
+```bash
+project-switch() {
+  local project=$(fd -t d -d 1 . ~/projects ~/work | fzf \
+    --preview 'ls -lah {}' \
+    --bind 'enter:become(cd {} && $SHELL)' \
+    --header 'Select project to open')
+}
+```
+
+<Tip>
+Add this function to your shell config and bind it to a key for quick project switching.
+</Tip>
+
+## Database Query Results
+
+```bash
+# Browse database tables (PostgreSQL example)
+echo "\dt" | psql -d mydb | fzf \
+  --header-lines=2 \
+  --preview 'echo "SELECT * FROM {1} LIMIT 10;" | psql -d mydb' \
+  --bind 'enter:execute(echo "SELECT * FROM {1};" | psql -d mydb | less)'
+```
+
+## Network Utilities
+
+### Port Scanner Results
+
+```bash
+sudo lsof -i -P -n | fzf \
+  --header-lines=1 \
+  --preview 'echo {}' \
+  --preview-window down:3:wrap \
+  --bind 'enter:execute(kill -9 {2})'
+```
+
+### Network Interface Selector
+
+```bash
+ip addr show | grep -E '^[0-9]' | fzf \
+  --preview 'ip addr show {2}' \
+  --bind 'enter:execute(sudo ifconfig {2} down)'
+```
+
+## Tips for Building Your Own
+
+<Steps>
+  <Step title="Start simple">
+    Begin with basic piping: `command | fzf`
+  </Step>
+  
+  <Step title="Add preview">
+    Show context: `--preview 'command {}'`
+  </Step>
+  
+  <Step title="Add actions">
+    Bind keys: `--bind 'key:execute(command {})'`
+  </Step>
+  
+  <Step title="Add reload">
+    Make it dynamic: `--bind 'ctrl-r:reload(command)'`
+  </Step>
+  
+  <Step title="Polish">
+    Add headers, prompts, and multiple bindings
+  </Step>
+</Steps>
+
+<Tip>
+Study these examples and adapt them to your workflow. The patterns are more important than the specific commands.
+</Tip>
