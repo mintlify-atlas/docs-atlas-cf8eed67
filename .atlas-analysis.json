@@ -1,0 +1,115 @@
+{
+  "projectType": "cli-tool",
+  "projectName": "fzf",
+  "projectDescription": "A command-line fuzzy finder for filtering any kind of list interactively",
+  "theme": "aspen",
+  "primaryColor": "#f48fb1",
+  "lightColor": "#ffc1e3",
+  "darkColor": "#bf5f82",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/usage",
+              "guides/search-syntax",
+              "guides/key-bindings",
+              "guides/fuzzy-completion",
+              "guides/shell-integration",
+              "guides/configuration"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "advanced/performance",
+              "advanced/custom-actions",
+              "advanced/preview-window",
+              "advanced/dynamic-reloading",
+              "advanced/ripgrep-integration",
+              "advanced/examples"
+            ]
+          },
+          {
+            "group": "Vim Integration",
+            "pages": [
+              "vim/overview",
+              "vim/installation",
+              "vim/usage"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Reference",
+        "groups": [
+          {
+            "group": "Command Options",
+            "pages": [
+              "reference/overview",
+              "reference/search-options",
+              "reference/display-options",
+              "reference/layout-options",
+              "reference/input-output",
+              "reference/preview-options",
+              "reference/keybindings"
+            ]
+          },
+          {
+            "group": "Shell Integration",
+            "pages": [
+              "reference/shell/bash",
+              "reference/shell/zsh",
+              "reference/shell/fish"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "reference/environment-variables",
+              "reference/display-modes",
+              "reference/color-schemes"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Fuzzy matching algorithm for fast interactive filtering",
+    "Portable single binary with zero dependencies",
+    "Shell integration for Bash, Zsh, and Fish",
+    "Vim/Neovim plugin support",
+    "Highly customizable with extensive options",
+    "Preview window with image support",
+    "Multi-select mode with TAB",
+    "Dynamic list reloading",
+    "Tmux popup mode"
+  ],
+  "publicApiSurface": [
+    "fzf",
+    "fzf-tmux",
+    "fzf --bash",
+    "fzf --zsh",
+    "fzf --fish",
+    "CTRL-T (file/directory search)",
+    "CTRL-R (command history)",
+    "ALT-C (cd directory)",
+    "FZF_DEFAULT_COMMAND",
+    "FZF_DEFAULT_OPTS",
+    "FZF_CTRL_T_COMMAND",
+    "FZF_CTRL_R_OPTS",
+    "FZF_ALT_C_COMMAND"
+  ]
+}
